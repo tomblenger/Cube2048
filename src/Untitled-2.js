@@ -1,49 +1,77 @@
-function deleteFromArray(arr, index) {
-  var halfBefore, halfAfter;
-  halfBefore = arr.slice(0, index);
-  if ((index + 1) < arr.length) halfAfter = arr.slice(index + 1, arr.length);
-  else halfAfter = [];
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-  return halfBefore.concat(halfAfter);
+// Scene Setup
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Lights for glow effect
+const light = new THREE.PointLight(0x00aaff, 1, 100);
+light.position.set(0, 0, 5);
+scene.add(light);
+
+// Outer Circle
+const outerGeometry = new THREE.CircleGeometry(2, 32);
+const outerMaterial = new THREE.MeshBasicMaterial({
+  color: 0x00aaff,
+  side: THREE.DoubleSide,
+  transparent: true,
+  opacity: 0.5,
+  antialias: true
+});
+const outerCircle = new THREE.Mesh(outerGeometry, outerMaterial);
+scene.add(outerCircle);
+
+// Inner Circle
+const innerGeometry = new THREE.CircleGeometry(0.9, 32);
+const innerMaterial = new THREE.MeshBasicMaterial({
+  color: 0x33aaff,
+  transparent: true,
+  opacity: 0.6,
+  antialias: true,
+});
+const innerCircle = new THREE.Mesh(innerGeometry, innerMaterial);
+scene.add(innerCircle);
+
+// Create Arrows
+const arrowGeometry = new THREE.ConeGeometry(0.4, 0.4, 3);
+const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, antialias: true });
+
+const arrows = [];
+const arrowPositions = [
+  { x: 0, y: 1.6, z: 0, rotationZ: 0 }, // Top
+  { x: 1.6, y: 0, z: 0, rotationZ: Math.PI / 2 }, // Right
+  { x: 0, y: -1.6, z: 0, rotationZ: Math.PI }, // Bottom
+  { x: -1.6, y: 0, z: 0, rotationZ: -Math.PI / 2 }, // Left
+];
+
+arrowPositions.forEach(pos => {
+  const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+  arrow.position.set(pos.x, pos.y, pos.z);
+  arrow.rotation.z = pos.rotationZ;
+  scene.add(arrow);
+  arrows.push(arrow);
+});
+
+// Orbit Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Animation Loop
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
+animate();
 
-
-
-var arr = [23, 43, 14, 9]
-
-arr = deleteFromArray(arr, 4);
-
-arr.sort((a, b) => a - b)
-console.log(arr);
-
-
-function insertArray(arr, item, index) {
-  var halfBefore, halfAfter;
-  halfBefore = arr.slice(0, index);
-  halfBefore.push(item);
-  if ((index + 1) < arr.length) halfAfter = arr.slice(index, arr.length);
-  else halfAfter = [];
-
-  return halfBefore.concat(halfAfter);
-}
-
-console.log(insertArray(arr, 222, 5));
-
-var res;
-var arr1 = [1, 3, 5];
-var arr2 = [4, 7, 12];
-res = [...arr1, ...arr2];
-console.log(res);
-
-
-function deleteIndexesFromArray(arr, indexArr) {
-  for (let i = 0; i < indexArr.length; i++) {
-    arr = deleteFromArray(arr, indexArr[i] - i);
-  }
-  return arr;
-}
-
-var A = [0, 1, 2, 3, 4, 5, 6];
-var B = [0, 1, 4];
-
-console.log(deleteIndexesFromArray(A, B));
+// Resize Handling
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});

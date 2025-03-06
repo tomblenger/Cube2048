@@ -5,9 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>First Three.js Project</title>
     <link rel="stylesheet" href="./style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="./script.js"></script>
+    <script>
+        const storedData = localStorage.getItem('tableData');
+        if (storedData) {
+            document.getElementById('tableDataDisplay').innerHTML = storedData;
+        } else {
+            // If no data exists in localStorage, show a default message
+            document.getElementById('tableDataDisplay').innerHTML = 'No table data available';
+        }
+    </script>
 </head>
-<body>
+<body class="bg-gray-100">
+
+    <!-- Table to display the data -->
+    <div class="container mx-auto my-8">
+        <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg">
+            <thead>
+            <tr class="bg-blue-600 text-white">
+                <th class="px-4 py-2 text-left">No</th>
+                <th class="px-4 py-2 text-left">Name</th>
+            </tr>
+            </thead>
+            <tbody id="tableBody">
+            <!-- Table rows will be filled with data dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Retrieve the stored table data from localStorage
+        const storedData = localStorage.getItem('tableData');
+
+        // Check if the data exists
+        if (storedData) {
+            // Parse the data if it's in JSON format
+            const tableData = JSON.parse(storedData);
+
+            // Get the table body element
+            const tableBody = document.getElementById('tableBody');
+
+            // Loop through the tableData array and create table rows
+            tableData.forEach((rowData, index) => {
+                // Create a new row
+                const row = document.createElement('tr');
+
+                // Create and append a cell for each column
+                const noCell = document.createElement('td');
+                noCell.classList.add('px-4', 'py-2', 'border', 'border-gray-300');
+                noCell.textContent = index + 1; // No (index + 1)
+
+                const nameCell = document.createElement('td');
+                nameCell.classList.add('px-4', 'py-2', 'border', 'border-gray-300');
+                // nameCell.textContent = rowData.cube.nameText // Name
+
+                // Append cells to the row
+                row.appendChild(noCell);
+                row.appendChild(nameCell);
+
+                // Append the row to the table body
+                tableBody.appendChild(row);
+            });
+        } else {
+            // If no data is found, show a message in the table body
+            const tableBody = document.getElementById('tableBody');
+            const noDataRow = document.createElement('tr');
+            const noDataCell = document.createElement('td');
+            noDataCell.colSpan = 2; // Span all columns
+            noDataCell.classList.add('px-4', 'py-2', 'border', 'border-gray-300', 'text-center', 'text-gray-500');
+            noDataCell.textContent = 'No table data available';
+            noDataRow.appendChild(noDataCell);
+            tableBody.appendChild(noDataRow);
+        }
+    </script>
     <canvas class="webgl"></canvas>
     <script type="module" src="./script.js"></script>
     <script src="./script.js"></script>

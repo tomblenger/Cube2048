@@ -239,6 +239,8 @@ class Cube {
       if (deltaX < 0) deltaX = -deltaX;
 
       if ((deltaX < minDist) && deltaY < minDist) {
+        // const data = tableData(star, bots);
+        // localStorage.setItem('tableData', data);
         alert(`GAME OVER ${botState}`);
         running = false;
       }
@@ -661,6 +663,16 @@ function cameraCtrl() {
   camera.rotation.x = Math.PI / 7;
 }
 
+function sortArray(cube) {
+  return cube.size.sort((a, b) => b - a);
+}
+
+function tableData(personCube, Bots) {
+  Bots.push(personCube);
+  return sortArray(Bots);
+  console.log(Bots);
+}
+
 function makeFood() {
   if (cycleFood < TIME_SPACE_FOOD) cycleFood++;
   else {
@@ -776,6 +788,9 @@ function makeInitialFood() {
     // for (let j = 0; j < buf; j++) food[food.length - 1].updateSize();
   }
 }
+
+
+
 //----------------------------------------start pro--------------------------------------------//
 
 //add Mouse Move Event
@@ -826,7 +841,7 @@ let threeAngle = new Text();
 threeAngle.fontSize = 0.4
 threeAngle.fontWeight = 'bold'
 threeAngle.color = '#ffffff';
-threeAngle.geometry.center()
+threeAngle.geometry.center();
 threeAngle.fillOpacity = 0.7
 threeAngle.position.x =  0.6
 threeAngle.position.y = 0.25
@@ -844,9 +859,7 @@ star.create();
 star.cube.add(nameText);
 
 document.addEventListener('mousemove', (event) => {
-  nameText.rotation.z = (-1) * star.cube.rotation.z
-  console.log(nameText.rotation.z);
-  console.lot(star.cube.rotation.z);
+  nameText.rotation.z = (-1) * star.cube.rotation.z;
 });
 star.cube.add(threeAngle)
 deltaRef = star.sizeDef / 2;
@@ -854,7 +867,7 @@ deltaRef = star.sizeDef / 2;
 //initialization
 addPlane();
 drawX();
-// drawY();
+// tableData();
 
 makeInitialFood();
 //engine

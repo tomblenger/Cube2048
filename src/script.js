@@ -19,6 +19,7 @@ const DISTANCE = 1;
 const ANTI_DISTANCE = 2;
 const RAND = 3;
 
+var touch = true;
 var moveSpeed = {
   x: 0.035,
   y: 0.035
@@ -71,6 +72,27 @@ var tailBuf = null;
 var mouseCount = 0;
 var alpha;
 
+var trace = [[], [], []];
+var bufPos = 0;
+var traceCount = 0;
+
+
+//add Mouse Move Event
+var touchSize = {
+  width: 300,
+  height: 250
+}
+
+function getElementPositions(element) {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    // leftTop: { x: rect.left + window.scrollX, y: rect.top + window.scrollY },  // Left-Top corner
+    // rightBottom: {
+    width: rect.right + window.scrollX, height: rect.bottom + window.scrollY
+  // }  // Right-Bottom corner
+  };
+}
 
 function getColor(size) {
   var buf = Math.floor(Math.log2(size / 2)) % 11
@@ -243,6 +265,7 @@ class Cube {
         // localStorage.setItem('tableData', data);
         alert(`GAME OVER ${botState}`);
         running = false;
+        // getHistory();
       }
     }
   }
@@ -673,6 +696,18 @@ function tableData(personCube, Bots) {
   console.log(Bots);
 }
 
+
+function makeInitialFood() {
+  for (let i = 0; i < MAX_INIT_FOOD; i++) {
+    // buf = Math.floor(Math.random() * 1000) % 5;
+    food.push(new Cube(FOOD, INITIAL));
+    food[food.length - 1].create();
+    // for (let j = 0; j < buf; j++) food[food.length - 1].updateSize();
+  }
+}
+
+
+
 function makeFood() {
   if (cycleFood < TIME_SPACE_FOOD) cycleFood++;
   else {
@@ -735,6 +770,62 @@ function lightControl() {
   scene.add(light3);
 }
 
+
+function extract(cube) {
+  let buf = {
+    x: 0,
+    y: 0,
+    direction: 0,
+    size: 2,
+    tail: []
+  }
+  buf.x = cube.pos[0];
+  buf.y = cube.pos[1];
+  buf.direction = cube.cube.rotation.z;
+  buf.size = cube.size;
+  if(cube.tail.length !== 0) {
+    cube.tail.forEach(item => buf.tail.push(extract(item)));
+  }
+  return buf;
+}
+
+function setHistory() {
+  //star history
+  let tStar, tBot = [], tFood = [];
+  tStar = extract(star);
+
+  //bot history
+  bots.forEach(bot => tBot.push(extract(bot)));
+
+  //food history
+  food.forEach(foodItem => tFood.push(extract(foodItem)));
+
+  trace[bufPos].push({
+    star: tStar,
+    bot: tBot,
+    food: tFood,
+  });
+
+  if(trace[bufPos].length === 1000) {
+    localStorage.setItem(`trace_${traceCount}`, JSON.stringify(trace[bufPos]));
+    if(bufPos > 2) bufPos = 0;
+    else bufPos++;
+    traceCount++;
+  }
+}
+
+function getHistory() {
+  let storedKeys = Object.keys(localStorage).filter(key => key.startsWith("trace_"));
+  let storedValues = [], mergedValues = [];
+  if(storedKeys.length !== 0) {
+    storedValues = storedKeys.map(key => JSON.parse(localStorage.getItem(key)));
+    mergedValues = storedValues.reduce((acc, curr) => acc.concat(curr), []);
+  }
+  let traceView = [...mergedValues, ...trace[bufPos]];
+  traceView = JSON.stringify(traceView);
+  document.getElementById('logView').innerHTML = `${traceView}`;
+}
+
 function animate() {
   if (!running) return;
   requestAnimationFrame(animate);
@@ -761,12 +852,15 @@ function animate() {
       bot.traceEngine();
     })
   }
+
   render();
 
   makeFood();
   makeBot();
+
   star.eatFoodAround();
   star.eatBotAround();
+
   if (bots.length > 0) {
     bots.forEach((bot, i) => {
       botState = i;
@@ -778,40 +872,25 @@ function animate() {
       bot.eatBotAround();
     });
   }
+  setHistory();
 }
 
-function makeInitialFood() {
-  for (let i = 0; i < MAX_INIT_FOOD; i++) {
-    // buf = Math.floor(Math.random() * 1000) % 5;
-    food.push(new Cube(FOOD, INITIAL));
-    food[food.length - 1].create();
-    // for (let j = 0; j < buf; j++) food[food.length - 1].updateSize();
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 //----------------------------------------start pro--------------------------------------------//
 
-//add Mouse Move Event
-document.addEventListener('mousemove', (event) => {
-  mouse.x = (event.clientX / sizes.width) * 2 - 1;
-  mouse.delta = 1 - (event.clientX / sizes.width) * 2;
-  mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-});
-
-document.addEventListener('click', (event) => {
-  if (mouseCount == 0) {
-    moveSpeedStar.x = 0.06;
-    moveSpeedStar.y = 0.06;
-    mouseCount = 1;
-  }
-  else {
-    moveSpeedStar.x = 0.035;
-    moveSpeedStar.y = 0.035;
-    mouseCount = 0;
-  }
-});
 
 const controllerCanvas = document.getElementById('controllerCanvas');
 const ctx = controllerCanvas.getContext('2d');
@@ -926,7 +1005,7 @@ function animateCircle() {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // If the distance is small enough, stop the animation
-    if (distance < 0.8) {
+    if (distance < 1) {
       isAnimating = false;
       return;
     }
@@ -946,8 +1025,8 @@ function animateCircle() {
 // Call the draw function initially
 window.onload = function() {
   drawController();
-  startAnimation(); // Start the animation when the page loads
-  animateCircle();  // Animate the inner circle towards the random point
+  // startAnimation(); // Start the animation when the page loads
+  // animateCircle();  // Animate the inner circle towards the random point
 };
 
 //create canvas, scene, camera and renderer
@@ -995,9 +1074,64 @@ star.create();
 
 star.cube.add(nameText);
 
+
+const switchTouchElement = document.getElementById('switchTouch');
+
+// Add a click event listener to the element
+switchTouchElement.addEventListener('click', function() {
+  touch = !touch;
+  switchTouchElement.innerText = touch ? "Touch" : "Com";
+
+});
+const webgl = document.getElementById('webgl');
+var canvasPos = {
+  width: 400,
+  height: 400,
+};
+
 document.addEventListener('mousemove', (event) => {
   nameText.rotation.z = (-1) * star.cube.rotation.z;
+  canvasPos = getElementPositions(webgl);
+  let deltaSize = {
+    width: -canvasPos.width + 300,
+    height: -canvasPos.height + 250,
+  }
+  // < touchSize.width &&
+  //     (canvasPos.height - event.clientY) < touchSize.height &&
+  // (canvasPos.width - event.clientX) > 0 &&
+  // (canvasPos.height - event.clientY) > 0
+  if(touch) {
+    if((canvasPos.width - event.clientX) * (canvasPos.width - event.clientX) +
+      (canvasPos.height - event.clientY) * (canvasPos.height - event.clientY) < 40000
+    ) {
+      mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
+      mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
+      mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
+    }
+  } else {
+    mouse.x = (event.clientX / sizes.width) * 2 - 1;
+    mouse.delta = 1 - (event.clientX / sizes.width) * 2;
+    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+  }
 });
+
+webgl.addEventListener('click', (event) => {
+  if(touch) {
+
+  } else {
+    if (mouseCount === 0) {
+      moveSpeedStar.x = 0.06;
+      moveSpeedStar.y = 0.06;
+      mouseCount = 1;
+    } else {
+      moveSpeedStar.x = 0.035;
+      moveSpeedStar.y = 0.035;
+      mouseCount = 0;
+    }
+  }
+});
+
+
 star.cube.add(threeAngle)
 deltaRef = star.sizeDef / 2;
 

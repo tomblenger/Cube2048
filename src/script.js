@@ -69,6 +69,7 @@ var bufFood = [];
 var bufBots = [];
 var tailBuf = null;
 var mouseCount = 0;
+var alpha;
 
 
 function getColor(size) {
@@ -272,8 +273,8 @@ class Cube {
           monster.eat = true;
           scene.remove(monster.cube);
           // scene.remove(monster.text);
-            let index = bufFood.findIndex(item => item == i);
-            if(index == -1) bufFood.push(i);
+          let index = bufFood.findIndex(item => item == i);
+          if(index == -1) bufFood.push(i);
         } else {
           if (mouse.x > 0) monster.pos[0] = this.pos[0] + (deltaX + 0.15);
           else monster.pos[0] = this.pos[0] - (deltaX + 0.15);
@@ -388,7 +389,7 @@ class Cube {
             this.updateSize();
           }
           this.tail = deleteFromArray(this.tail, i);
-            return ;
+          return ;
         }
       } else {
         if (this.tail[i].size == this.tail[i - 1].size) {
@@ -463,9 +464,9 @@ class Cube {
           bottom: this.pos[1] - scaledSize.height
         }
         if (neighbor.pos[0] > this.rect.left &&
-          neighbor.pos[0] < this.rect.right &&
-          neighbor.pos[1] < this.rect.top &&
-          neighbor.pos[1] > this.rect.bottom)
+            neighbor.pos[0] < this.rect.right &&
+            neighbor.pos[1] < this.rect.top &&
+            neighbor.pos[1] > this.rect.bottom)
         {
           let x = neighbor.pos[0] - this.pos[0];
           let y = neighbor.pos[1] - this.pos[1];
@@ -475,7 +476,7 @@ class Cube {
           else theta = y / x;
 
           if (neighbor.size > this.size &&
-            (neighbor.type == BOT || neighbor.type == PERSON))
+              (neighbor.type == BOT || neighbor.type == PERSON))
             this.enemies.push({ size: neighbor.size, x: x, y: y, distance, theta });
           else if (neighbor.size < this.size)
             this.food.push({ size: neighbor.size, x: x, y: y, distance, theta });
@@ -595,7 +596,7 @@ class Cube {
     // let def = this.enemies[0];
     let def = star;
     this.enemies.forEach(item => {
-      
+
     })
 
   }
@@ -685,20 +686,18 @@ function makeBot() {
       bots[bots.length - 1].create();
 
       let botText = new Text();
-      botText.fontSize = 0.2;
+      botText.fontSize = 0.15;
       botText.fontWeight = 'bold'
       botText.color = '#ffffff';
       botText.geometry.center();
-
-      // botText.position.x = -0.3
-      // botText.position.y = -0.2
-
-      botText.position.x = -0.25
-      botText.position.y = -0.2
+      botText.position.z = 0.3
 
       for (let i = 0; i < bots.length; i++) {
         botText.text = `Bot${i}`
         bots[bots.length-1].cube.add(botText);
+        document.addEventListener('mousemove', (event) => {
+          botText.rotation.z = bots[i].cube.rotation.z * (-1)
+        });
       }
 
       for (let i = 0; i < buf; i++) bots[bots.length - 1].updateSize();
@@ -815,21 +814,41 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for
 
 
 let nameText = new Text();
-
-nameText.fontSize = 0.2;
+nameText.fontSize = 0.1;
 nameText.fontWeight = 'bold'
 nameText.color = '#ffffff';
 nameText.geometry.center();
+nameText.position.x = -0.2
+nameText.position.z = 0.6
+nameText.text = `you`
 
-nameText.position.x = -0.3
-nameText.position.y = -0.2
+let threeAngle = new Text();
+threeAngle.fontSize = 0.4
+threeAngle.fontWeight = 'bold'
+threeAngle.color = '#ffffff';
+threeAngle.geometry.center()
+threeAngle.fillOpacity = 0.7
+threeAngle.position.x =  0.6
+threeAngle.position.y = 0.25
+threeAngle.rotation.z =  - Math.PI/2
+threeAngle.text = `🔺`
 
-nameText.text = `Player`
+
 
 //create star, this is just you.
 star = new Cube(PERSON, INITIAL);
 star.create();
+
+
+
 star.cube.add(nameText);
+
+document.addEventListener('mousemove', (event) => {
+  nameText.rotation.z = (-1) * star.cube.rotation.z
+  console.log(nameText.rotation.z);
+  console.lot(star.cube.rotation.z);
+});
+star.cube.add(threeAngle)
 deltaRef = star.sizeDef / 2;
 
 //initialization

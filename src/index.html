@@ -3,15 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>First Three.js Project</title>
+    <title>2048 Cubic</title>
     <link rel="stylesheet" href="./style.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module" src="./script.js"></script>
 </head>
 <body class="bg-gray-100">
 
     <!-- Table to display the data -->
-    <div class="absolute w-full mx-auto my-8">
+
+
+    <div id="canvas-container">
+        <!-- Three.js Canvas will be placed here -->
+        <canvas class="webgl" id="webgl"></canvas>
+
+        <!-- Game Input Form -->
+        <form onsubmit="event.preventDefault()" id="game-form" class="text-center">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Enter Player Name</h2>
+            <input type="text" id="playerName" class="border border-gray-300 p-2 mb-4 rounded-md" placeholder="Enter your name" required />
+            <br />
+            <div class="mt-4">
+                <label class="inline-flex items-center mr-4">
+                    <input type="radio" id="com" name="playMode" class="form-radio text-blue-500" checked />
+                    <span class="ml-2 text-gray-700">Com play</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" id="phone" name="playMode" class="form-radio text-blue-500"/>
+                    <span class="ml-2 text-gray-700">Phone play</span>
+                </label>
+            </div>
+            <button id="startButton" type="submit" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mt-4">
+                Start Game
+            </button>
+        </form>
+    </div>
+    <button id="switchTouch" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+        Com
+    </button>
+    <div class="container mx-auto my-8">
+
         <div class="absolute top-5 right-4  p-4 rounded-lg shadow-lg">
             <table id="leaderboard" class="text-lg text-gray-300 border border-separated rounded-lg">
                 <thead class="rounded-lg">
@@ -29,9 +58,16 @@
             </table>
         </div>
     </div>
-    <canvas class="webgl"></canvas>
+
+    <div id="customAlert" class="modal" style="display: none">
+        <div class="modal-content">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4" id="alertTitle">Game Info</h3>
+            <p id="alertMessage" class="text-gray-700"></p>
+            <button id="closeAlert" class="bg-blue-500 text-white p-2 rounded-md mt-4 hover:bg-blue-600">Close</button>
+        </div>
+    </div>
+
+    <canvas id="controllerCanvas" width="200" height="200" style="position: absolute; bottom: 0px; right: 0px; z-index: 10;"></canvas>
     <script type="module" src="./script.js"></script>
-    <script src="./script.js"></script>
-    <canvas id="controllerCanvas" width="200" height="200" style="position: absolute; bottom: 10px; right: 10px; z-index: 10;"></canvas>
 </body>
 </html>

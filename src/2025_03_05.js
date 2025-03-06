@@ -2,11 +2,6 @@ import * as THREE from 'three';
 import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
 
-const controllerCanvas = document.getElementById('controllerCanvas');
-const webgl = document.getElementById('webgl');
-const gameForm = document.getElementById("game-form");
-const ctx = controllerCanvas.getContext('2d');
-
 const PERSON = 0;
 const FOOD = 1;
 const BOT = 2;
@@ -32,12 +27,6 @@ var moveSpeed = {
   y: 0.035
 };
 var moveSpeedStar = moveSpeed;
-
-var isDragging = false;
-var canvasPos = {
-  width: 400,
-  height: 400,
-};
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight
@@ -81,6 +70,7 @@ var cycleFood = 0;
 var cycleTable = 0;
 var mouse = new THREE.Vector2();
 var running = true;
+var deltaRef = 1000;
 var bufFood = [];
 var bufBots = [];
 var tailBuf = null;
@@ -91,9 +81,8 @@ var trace = [[], [], []];
 var bufPos = 0;
 var traceCount = 0;
 
-var innerCircleX = controllerCanvas.width / 2;
-var innerCircleY = controllerCanvas.height / 2;
 
+//add Mouse Move Event
 var touchSize = {
   width: 300,
   height: 250
@@ -876,32 +865,6 @@ function updateTable(person, bots) {
   }
 }
 
-function drawController() {
-  const centerX = controllerCanvas.width / 2;
-  const centerY = controllerCanvas.height / 2;
-
-  // Clear the canvas before redrawing
-  ctx.clearRect(0, 0, controllerCanvas.width, controllerCanvas.height);
-
-  // Draw the outer circle
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#2b2d42';  // Outer circle color
-  ctx.fill();
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = '#1f2430'; // Outer circle border color
-  ctx.stroke();
-
-  // Draw the inner circle
-  ctx.beginPath();
-  ctx.arc(innerCircleX, innerCircleY, innerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#3b3f53';  // Inner circle color
-  ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#262a39'; // Inner circle border color
-  ctx.stroke();
-}
-
 function animate() {
   if (!running) return;
   requestAnimationFrame(animate);
@@ -960,10 +923,49 @@ function animate() {
 //----------------------------------------start pro--------------------------------------------//
 
 
-window.onload = function() {
-  drawController();
-};
+const controllerCanvas = document.getElementById('controllerCanvas');
 
+const ctx = controllerCanvas.getContext('2d');
+
+let innerCircleX = controllerCanvas.width / 2;
+let innerCircleY = controllerCanvas.height / 2;
+
+let targetX = null;
+let targetY = null;
+let isAnimating = false;
+let animationSpeed = 0.05; // Speed of animation (adjust as needed)
+
+// Variable to track whether the mouse is being dragged
+let isDragging = false;
+
+// Function to draw the outer and inner circles
+function drawController() {
+  const centerX = controllerCanvas.width / 2;
+  const centerY = controllerCanvas.height / 2;
+
+  // Clear the canvas before redrawing
+  ctx.clearRect(0, 0, controllerCanvas.width, controllerCanvas.height);
+
+  // Draw the outer circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#2b2d42';  // Outer circle color
+  ctx.fill();
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#1f2430'; // Outer circle border color
+  ctx.stroke();
+
+  // Draw the inner circle
+  ctx.beginPath();
+  ctx.arc(innerCircleX, innerCircleY, innerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#3b3f53';  // Inner circle color
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#262a39'; // Inner circle border color
+  ctx.stroke();
+}
+
+// Function to handle mouse down event (start dragging)
 controllerCanvas.addEventListener('mousedown', (event) => {
   const mouseX = event.offsetX;
   const mouseY = event.offsetY;
@@ -976,6 +978,7 @@ controllerCanvas.addEventListener('mousedown', (event) => {
   }
 });
 
+// Function to handle mouse move event (dragging the inner circle)
 controllerCanvas.addEventListener('mousemove', (event) => {
   if (isDragging) {
     const mouseX = event.offsetX;
@@ -1004,86 +1007,54 @@ controllerCanvas.addEventListener('mousemove', (event) => {
   }
 });
 
+// Function to handle mouse up event (stop dragging)
 controllerCanvas.addEventListener('mouseup', () => {
   isDragging = false;
 });
 
+// Function to handle mouse leave event (stop dragging if the mouse leaves the canvas)
 controllerCanvas.addEventListener('mouseleave', () => {
   isDragging = false;
 });
 
-controllerCanvas.addEventListener('mousedown', (event) => {
-  controllable = true;
-});
+// Function to generate a random point on the outer circle and start animation
+function startAnimation() {
+  const angle = Math.random() * Math.PI * 2; // Random angle between 0 and 2π
+  targetX = controllerCanvas.width / 2 + outerRadius * Math.cos(angle);
+  targetY = controllerCanvas.height / 2 + outerRadius * Math.sin(angle);
 
-webgl.addEventListener('click', (event) => {
-  if(touch) {
+  isAnimating = true; // Start animation
+}// Function to animate the inner circle towards the random point
+function animateCircle() {
+  if (isAnimating) {
+    const dx = targetX - innerCircleX;
+    const dy = targetY - innerCircleY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-  } else {
-    if (mouseCount === 0) {
-      moveSpeedStar.x = 0.06;
-      moveSpeedStar.y = 0.06;
-      mouseCount = 1;
-    } else {
-      moveSpeedStar.x = 0.035;
-      moveSpeedStar.y = 0.035;
-      mouseCount = 0;
+    // If the distance is small enough, stop the animation
+    if (distance < 1) {
+      isAnimating = false;
+      return;
     }
+
+    // Move the inner circle towards the target point
+    innerCircleX += dx * animationSpeed;
+    innerCircleY += dy * animationSpeed;
+
+    // Redraw the controller with the updated position
+    drawController();
+
+    // Continue animating
+    requestAnimationFrame(animateCircle);
   }
-});
+}
 
-webgl.addEventListener('mouseup', () => {
-  controllable = false;
-});
-
-gameForm.addEventListener("submit", function(event) {
-  event.preventDefault(); // Prevent the default form submission
-
-  // Get the player name from the input field
-  const playerName = document.getElementById("playerName").value;
-
-  // Get the selected play mode (either "Com play" or "Phone play")
-  if (document.getElementById("com").checked) {
-    touch = false;
-  } else if (document.getElementById("phone").checked) {
-    touch = true;
-  }
-
-  // Display the collected values (you can use them as needed in your game logic)
-  // You can proceed with further actions like hiding the form or starting the game
-  gameForm.style.display = "none";
-
-  nameText.text = playerName;
-
-  star.cube.add(nameText);
-
-  running = true;
-  animate();
-});
-
-document.addEventListener('mousemove', (event) => {
-  nameText.rotation.z = (-1) * star.cube.rotation.z;
-  canvasPos = getElementPositions(webgl);
-  let deltaSize = {
-    width: -canvasPos.width + 300,
-    height: -canvasPos.height + 250,
-  }
-  if(touch) {
-    if(controllable) {
-      let calRadius = ((canvasPos.width - outerRadius / 2 - event.clientX) * (canvasPos.width - outerRadius / 2 - event.clientX) +
-        (canvasPos.height - outerRadius / 2 - event.clientY) * (canvasPos.height - outerRadius / 2 - event.clientY)) / 4;
-      if (calRadius < (outerRadius * outerRadius)) {
-        mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
-        mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
-        mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
-      }
-    }
-  } else {
-    mouse.x = (event.clientX / sizes.width) * 2 - 1;
-    mouse.delta = 1 - (event.clientX / sizes.width) * 2;
-    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-  }
-});
+// Call the draw function initially
+window.onload = function() {
+  drawController();
+  // startAnimation(); // Start the animation when the page loads
+  // animateCircle();  // Animate the inner circle towards the random point
+};
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
@@ -1094,6 +1065,7 @@ const renderer = new THREE.WebGLRenderer({
   canvas: canvas
 });
 
+// Lighting
 lightControl();
 
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for more natural results
@@ -1117,19 +1089,126 @@ threeAngle.fillOpacity = 0.7
 threeAngle.position.x =  0.6
 threeAngle.position.y = 0.25
 threeAngle.rotation.z =  - Math.PI/2
-threeAngle.text = `🔺`;
+threeAngle.text = `🔺`
+
+
 
 //create star, this is just you.
 star = new Cube(PERSON, INITIAL);
 star.create();
+
+
+
 star.cube.add(nameText);
 
 
-star.cube.add(threeAngle)
+const switchTouchElement = document.getElementById('switchTouch');
 
+// Add a click event listener to the element
+switchTouchElement.addEventListener('click', function() {
+  touch = !touch;
+  switchTouchElement.innerText = touch ? "Touch" : "Com";
+
+});
+const webgl = document.getElementById('webgl');
+var canvasPos = {
+  width: 400,
+  height: 400,
+};
+
+document.addEventListener('mousemove', (event) => {
+  nameText.rotation.z = (-1) * star.cube.rotation.z;
+  canvasPos = getElementPositions(webgl);
+  let deltaSize = {
+    width: -canvasPos.width + 300,
+    height: -canvasPos.height + 250,
+  }
+  // < touchSize.width &&
+  //     (canvasPos.height - event.clientY) < touchSize.height &&
+  // (canvasPos.width - event.clientX) > 0 &&
+  // (canvasPos.height - event.clientY) > 0
+  if(touch) {
+    if(controllable) {
+      if ((canvasPos.width - outerRadius / 2 - event.clientX) * (canvasPos.width - outerRadius / 2 - event.clientX) +
+        (canvasPos.height - outerRadius / 2 - event.clientY) * (canvasPos.height - outerRadius / 2 - event.clientY) < outerRadius * outerRadius * 4
+      ) {
+        mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
+        mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
+        mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
+      }
+    }
+  } else {
+    mouse.x = (event.clientX / sizes.width) * 2 - 1;
+    mouse.delta = 1 - (event.clientX / sizes.width) * 2;
+    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+  }
+});
+
+webgl.addEventListener('click', (event) => {
+  if(touch) {
+
+  } else {
+    if (mouseCount === 0) {
+      moveSpeedStar.x = 0.06;
+      moveSpeedStar.y = 0.06;
+      mouseCount = 1;
+    } else {
+      moveSpeedStar.x = 0.035;
+      moveSpeedStar.y = 0.035;
+      mouseCount = 0;
+    }
+  }
+});
+
+// document.getElementById("startButton").addEventListener('click', (event) => {
+//     scene.fog = new THREE.FogExp2(0xdddddd, 0);
+//     document.getElementById("game-form").style.display = 'none';
+//     alert(document.getElementById("playerName").value);
+//     running = true; animate();
+// })
+document.getElementById("game-form").addEventListener("submit", function(event) {
+  event.preventDefault(); // Prevent the default form submission
+
+  // Get the player name from the input field
+  const playerName = document.getElementById("playerName").value;
+
+  // Get the selected play mode (either "Com play" or "Phone play")
+  if (document.getElementById("com").checked) {
+    touch = false;
+  } else if (document.getElementById("phone").checked) {
+    touch = true;
+  }
+
+  // Display the collected values (you can use them as needed in your game logic)
+  // You can proceed with further actions like hiding the form or starting the game
+  document.getElementById("game-form").style.display = "none";
+
+  nameText.text = playerName;
+
+  star.cube.add(nameText);
+
+  running = true;
+  animate();
+});
+
+
+webgl.addEventListener('mouseup', () => {
+  controllable = false;
+});
+document.getElementById("controllerCanvas").addEventListener('mousedown', (event) => {
+  controllable = true;
+});
+
+
+star.cube.add(threeAngle)
+deltaRef = star.sizeDef / 2;
+
+//initialization
 addPlane();
 drawX();
-makeInitialFood();
+// tableData();
 
+makeInitialFood();
+//engine
 animate();
 running = false;

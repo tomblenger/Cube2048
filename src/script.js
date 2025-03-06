@@ -30,7 +30,7 @@ const sizes = {
 };
 const maxWidth = sizes.width * 2;
 const maxHeight = sizes.height * 2;
-const screenScale = 200;
+const screenScale = 100;
 const maxScaledWidth = maxWidth / screenScale;
 const maxScaledHeight = maxHeight / screenScale;
 
@@ -239,7 +239,7 @@ class Cube {
       if (deltaX < 0) deltaX = -deltaX;
 
       if ((deltaX < minDist) && deltaY < minDist) {
-        // const data = tableData(star, bots);
+        const data = tableData(star, bots);
         // localStorage.setItem('tableData', data);
         alert(`GAME OVER ${botState}`);
         running = false;
@@ -663,16 +663,6 @@ function cameraCtrl() {
   camera.rotation.x = Math.PI / 7;
 }
 
-function sortArray(cube) {
-  return cube.size.sort((a, b) => b - a);
-}
-
-function tableData(personCube, Bots) {
-  Bots.push(personCube);
-  return sortArray(Bots);
-  console.log(Bots);
-}
-
 function makeFood() {
   if (cycleFood < TIME_SPACE_FOOD) cycleFood++;
   else {
@@ -761,6 +751,7 @@ function animate() {
       bot.traceEngine();
     })
   }
+
   render();
 
   makeFood();
@@ -778,6 +769,34 @@ function animate() {
       bot.eatBotAround();
     });
   }
+
+}
+
+function updateTable(person, bots) {
+  const updateCube = bots.map((bot, index) => {
+    return {
+      cube: bot,
+      id: index
+    }
+  }).concat({cube: person, id: "You"});
+console.log(updateCube)
+
+  const sortData = updateCube.sort((a, b) => a.cube.size - b.cube.size);
+
+  const tbody = document.querySelector('#leaderboard tbody');
+  tbody.innerHTML = '';
+
+  // Populate the table with sorted data
+
+  sortData.forEach(data => {
+    const row = document.createElement('tr');
+    const name = data.id !== "You" ? `Bot ${data.id}` : "You"
+    row.innerHTML = `
+      <td class="text-center border border-white border-separated py-1">${name}</td>
+      <td class="text-center border border-white border-separated py-1">${data.cube.size}</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
 function makeInitialFood() {
@@ -824,10 +843,10 @@ const innerRadius = 30; // Inner circle radius
 let innerCircleX = controllerCanvas.width / 2;
 let innerCircleY = controllerCanvas.height / 2;
 
-let targetX = null;
-let targetY = null;
-let isAnimating = false;
-let animationSpeed = 0.05; // Speed of animation (adjust as needed)
+// let targetX = null;
+// let targetY = null;
+// let isAnimating = false;
+// let animationSpeed = 0.05; // Speed of animation (adjust as needed)
 
 // Variable to track whether the mouse is being dragged
 let isDragging = false;
@@ -912,42 +931,41 @@ controllerCanvas.addEventListener('mouseleave', () => {
 });
 
 // Function to generate a random point on the outer circle and start animation
-function startAnimation() {
-  const angle = Math.random() * Math.PI * 2; // Random angle between 0 and 2π
-  targetX = controllerCanvas.width / 2 + outerRadius * Math.cos(angle);
-  targetY = controllerCanvas.height / 2 + outerRadius * Math.sin(angle);
-
-  isAnimating = true; // Start animation
-}// Function to animate the inner circle towards the random point
-function animateCircle() {
-  if (isAnimating) {
-    const dx = targetX - innerCircleX;
-    const dy = targetY - innerCircleY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // If the distance is small enough, stop the animation
-    if (distance < 0.8) {
-      isAnimating = false;
-      return;
-    }
-
-    // Move the inner circle towards the target point
-    innerCircleX += dx * animationSpeed;
-    innerCircleY += dy * animationSpeed;
-
-    // Redraw the controller with the updated position
-    drawController();
-
-    // Continue animating
-    requestAnimationFrame(animateCircle);
-  }
-}
+// function startAnimation() {
+//   const angle = Math.random() * Math.PI * 2; // Random angle between 0 and 2π
+//   targetX = controllerCanvas.width / 2 + outerRadius * Math.cos(angle);
+//   targetY = controllerCanvas.height / 2 + outerRadius * Math.sin(angle);
+//
+//   isAnimating = true; // Start animation
+// }// Function to animate the inner circle towards the random point
+// function animateCircle() {
+//   if (isAnimating) {
+//     const dx = targetX - innerCircleX;
+//     const dy = targetY - innerCircleY;
+//     const distance = Math.sqrt(dx * dx + dy * dy);
+//
+//     // If the distance is small enough, stop the animation
+//     if (distance < 1) {
+//       isAnimating = false;
+//       return;
+//     }
+//
+//     // Move the inner circle towards the target point
+//     innerCircleX += dx * animationSpeed;
+//     innerCircleY += dy * animationSpeed;
+//
+//     // Redraw the controller with the updated position
+//     drawController();
+//
+//     // Continue animating
+//     requestAnimationFrame(animateCircle);
+//   }
+// }
 
 // Call the draw function initially
 window.onload = function() {
   drawController();
-  startAnimation(); // Start the animation when the page loads
-  animateCircle();  // Animate the inner circle towards the random point
+
 };
 
 //create canvas, scene, camera and renderer
@@ -1006,6 +1024,11 @@ addPlane();
 drawX();
 // tableData();
 
+setInterval(() => {
+  updateTable(star, bots); // Player eats something and grows
+}, 2000);
+
+console.log("ehrere")
 makeInitialFood();
 //engine
 animate();

@@ -813,6 +813,143 @@ document.addEventListener('click', (event) => {
   }
 });
 
+const controllerCanvas = document.getElementById('controllerCanvas');
+const ctx = controllerCanvas.getContext('2d');
+
+// Controller settings
+const outerRadius = 80; // Outer circle radius
+const innerRadius = 30; // Inner circle radius
+
+// Initial position of the inner circle (centered in the outer circle)
+let innerCircleX = controllerCanvas.width / 2;
+let innerCircleY = controllerCanvas.height / 2;
+
+let targetX = null;
+let targetY = null;
+let isAnimating = false;
+let animationSpeed = 0.05; // Speed of animation (adjust as needed)
+
+// Variable to track whether the mouse is being dragged
+let isDragging = false;
+
+// Function to draw the outer and inner circles
+function drawController() {
+  const centerX = controllerCanvas.width / 2;
+  const centerY = controllerCanvas.height / 2;
+
+  // Clear the canvas before redrawing
+  ctx.clearRect(0, 0, controllerCanvas.width, controllerCanvas.height);
+
+  // Draw the outer circle
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#2b2d42';  // Outer circle color
+  ctx.fill();
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#1f2430'; // Outer circle border color
+  ctx.stroke();
+
+  // Draw the inner circle
+  ctx.beginPath();
+  ctx.arc(innerCircleX, innerCircleY, innerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#3b3f53';  // Inner circle color
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#262a39'; // Inner circle border color
+  ctx.stroke();
+}
+
+// Function to handle mouse down event (start dragging)
+controllerCanvas.addEventListener('mousedown', (event) => {
+  const mouseX = event.offsetX;
+  const mouseY = event.offsetY;
+
+  // Check if the mouse is inside the inner circle to start dragging
+  const dx = mouseX - innerCircleX;
+  const dy = mouseY - innerCircleY;
+  if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
+    isDragging = true;
+  }
+});
+
+// Function to handle mouse move event (dragging the inner circle)
+controllerCanvas.addEventListener('mousemove', (event) => {
+  if (isDragging) {
+    const mouseX = event.offsetX;
+    const mouseY = event.offsetY;
+
+    // Calculate the movement of the inner circle
+    const dx = mouseX - controllerCanvas.width / 2;
+    const dy = mouseY - controllerCanvas.height / 2;
+
+    // Calculate the distance between the center and the mouse position
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If the distance is less than or equal to the outer circle radius, move the inner circle
+    if (distance <= outerRadius - innerRadius) {
+      innerCircleX = mouseX;
+      innerCircleY = mouseY;
+    } else {
+      // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
+      const angle = Math.atan2(dy, dx);
+      innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
+      innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
+    }
+
+    // Redraw the controller with the updated inner circle position
+    drawController();
+  }
+});
+
+// Function to handle mouse up event (stop dragging)
+controllerCanvas.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+// Function to handle mouse leave event (stop dragging if the mouse leaves the canvas)
+controllerCanvas.addEventListener('mouseleave', () => {
+  isDragging = false;
+});
+
+// Function to generate a random point on the outer circle and start animation
+function startAnimation() {
+  const angle = Math.random() * Math.PI * 2; // Random angle between 0 and 2π
+  targetX = controllerCanvas.width / 2 + outerRadius * Math.cos(angle);
+  targetY = controllerCanvas.height / 2 + outerRadius * Math.sin(angle);
+
+  isAnimating = true; // Start animation
+}// Function to animate the inner circle towards the random point
+function animateCircle() {
+  if (isAnimating) {
+    const dx = targetX - innerCircleX;
+    const dy = targetY - innerCircleY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If the distance is small enough, stop the animation
+    if (distance < 0.8) {
+      isAnimating = false;
+      return;
+    }
+
+    // Move the inner circle towards the target point
+    innerCircleX += dx * animationSpeed;
+    innerCircleY += dy * animationSpeed;
+
+    // Redraw the controller with the updated position
+    drawController();
+
+    // Continue animating
+    requestAnimationFrame(animateCircle);
+  }
+}
+
+// Call the draw function initially
+window.onload = function() {
+  drawController();
+  startAnimation(); // Start the animation when the page loads
+  animateCircle();  // Animate the inner circle towards the random point
+};
+
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();

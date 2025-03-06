@@ -688,7 +688,7 @@ function makeBot() {
       bots[bots.length - 1].create();
 
       let botText = new Text();
-      botText.fontSize = 0.15;
+      botText.fontSize = 0.11;
       botText.fontWeight = 'bold'
       botText.color = '#ffffff';
       botText.geometry.center();
@@ -779,18 +779,18 @@ function updateTable(person, bots) {
       id: index
     }
   }).concat({cube: person, id: "You"});
-console.log(updateCube)
 
-  const sortData = updateCube.sort((a, b) => a.cube.size - b.cube.size);
+  const sortData = updateCube.sort((a, b) => b.cube.size - a.cube.size);
 
+  const sortLimit = sortData.filter((data, key) => key < 5)
   const tbody = document.querySelector('#leaderboard tbody');
   tbody.innerHTML = '';
 
   // Populate the table with sorted data
 
-  sortData.forEach(data => {
+  sortLimit.forEach(data => {
     const row = document.createElement('tr');
-    const name = data.id !== "You" ? `Bot ${data.id}` : "You"
+    const name = data.id === "You" ? "You" : `Bot ${data.id}`
     row.innerHTML = `
       <td class="text-center border border-white border-separated py-1">${name}</td>
       <td class="text-center border border-white border-separated py-1">${data.cube.size}</td>

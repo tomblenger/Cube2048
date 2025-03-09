@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
 
+let savedFrames = [];
+
 const controllerCanvas = document.getElementById('controllerCanvas');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
@@ -25,16 +27,20 @@ const DISTANCE = 1;
 const ANTI_DISTANCE = 2;
 const RAND = 3;
 
-var touch = false;
-var controllable = false;
-var moveSpeed = {
+let nameText;
+let playerName = "PPP";
+let replay = false;
+let threeAngle;
+let touch = false;
+let controllable = false;
+let moveSpeed = {
   x: 0.035,
   y: 0.035
 };
-var moveSpeedStar = moveSpeed;
+let moveSpeedStar = moveSpeed;
 
-var isDragging = false;
-var canvasPos = {
+let isDragging = false;
+let canvasPos = {
   width: 400,
   height: 400,
 };
@@ -69,32 +75,31 @@ const color = [
   'rgb(249,251,110)',
 ];
 
-var bProduce = true;
-var star;
-var bots = [];
-var food = [];
-var lineX = [];
-var botState = 0;
-var countEnemy;
-var cycleBot = 0;
-var cycleFood = 0;
-var cycleTable = 0;
-var mouse = new THREE.Vector2();
-var running = true;
-var bufFood = [];
-var bufBots = [];
-var tailBuf = null;
-var mouseCount = 0;
-var alpha;
+let bProduce = true;
+let star;
+let bots = [];
+let food = [];
+let lineX = [];
+let botState = 0;
+let countEnemy;
+let cycleBot = 0;
+let cycleFood = 0;
+let cycleTable = 0;
+let mouse = new THREE.Vector2();
+let running = true;
+let bufFood = [];
+let bufBots = [];
+let tailBuf = null;
+let mouseCount = 0;
 
-var trace = [[], [], []];
-var bufPos = 0;
-var traceCount = 0;
+let trace = [[], [], []];
+let bufPos = 0;
+let traceCount = 0;
 
-var innerCircleX = controllerCanvas.width / 2;
-var innerCircleY = controllerCanvas.height / 2;
+let innerCircleX = controllerCanvas.width / 2;
+let innerCircleY = controllerCanvas.height / 2;
 
-var touchSize = {
+let touchSize = {
   width: 300,
   height: 250
 }
@@ -111,7 +116,7 @@ function getElementPositions(element) {
 }
 
 function getColor(size) {
-  var buf = Math.floor(Math.log2(size / 2)) % 11
+  let buf = Math.floor(Math.log2(size / 2)) % 11
   return color[buf];
 }
 
@@ -122,7 +127,7 @@ function randomizePosition(max) {
 }
 
 function insertArray(arr, item, index) {
-  var halfBefore, halfAfter;
+  let halfBefore, halfAfter;
   halfBefore = arr.slice(0, index);
   halfBefore.push(item);
   if ((index + 1) < arr.length) halfAfter = arr.slice(index, arr.length);
@@ -132,12 +137,12 @@ function insertArray(arr, item, index) {
 }
 
 function deleteFromArray(arr, index) {
-  var halfBefore, halfAfter;
+  let halfBefore, halfAfter;
   halfBefore = arr.slice(0, index);
   if ((index + 1) < arr.length) halfAfter = arr.slice(index + 1, arr.length);
   else halfAfter = [];
   let buf = arr[index].tail.length;
-  if (buf != 0) {
+  if (buf !== 0) {
     for (let i = 0; i < buf; i++) {
       arr[index].tail[i].type = FOOD;
       food.push(arr[index].tail[i]);
@@ -174,7 +179,7 @@ class Cube {
     this.bufAngle = [];
 
     //if size is not defined
-    if (size == undefined) size = INITIAL; //Math.floor(Math.log2(Math.floor(Math.random() * 1000 + 2)));
+    if (size === undefined) size = INITIAL; //Math.floor(Math.log2(Math.floor(Math.random() * 1000 + 2)));
     else this.count = Math.log2(size);
     //init size and type
     this.sizeDef = INITIAL * 0.1 + 0.3;
@@ -205,10 +210,10 @@ class Cube {
 
   create(pos = undefined) {
     //add cube to the scene and set position and draw text on the top of cubic
-    if(this.eat == false) scene.add(this.cube);
+    if(this.eat === false) scene.add(this.cube);
     this.setPos(pos);
     this.createText();
-    if(this.size == INITIAL) this.updateSize();
+    if(this.size === INITIAL) this.updateSize();
   }
 
   updateSize() {
@@ -221,7 +226,7 @@ class Cube {
     this.count++;
     this.scale *= 1.05;
     this.cube.scale.set(this.scale, this.scale, this.scale);
-    this.text.text = this.size < 1000 ? `${this.size}` : `${parseInt(this.size / 1000)}K`;
+    this.text.text = this.size < 1000 ? `${this.size}` : `${Math.floor(this.size / 1000)}K`;
     this.text.fontSize = this.size < 1000 ? 0.2 : 0.3;
     this.text.fontWeight = 'bold'
     this.text.color = '#ffffff';
@@ -282,19 +287,20 @@ class Cube {
         document.getElementById("alertTitle").innerHTML = `GAME OVER ${botState}`;
 
         // Add event listener to close the alert
-        document.getElementById("closeAlert").addEventListener("click", function() {
-          document.getElementById("customAlert").style.display = 'none';
-        });
 
         running = false;
         // getHistory();
+        console.log(savedFrames);
+        // isRecording = false; // Stop capturing frames
+        replayFrames(); // Start reviewing
+
       }
     }
   }
 
   eatFoodAround() {
-    // if (this.type == PERSON) {
-    if (bufFood.length != 0) {
+    // if (this.type === PERSON) {
+    if (bufFood.length !== 0) {
       food = deleteIndexesFromArray(food, bufFood);
       bufFood = [];
     }
@@ -309,7 +315,7 @@ class Cube {
           tailBuf = new Cube(TAIL, INITIAL);
           tailBuf.create();
           while (true) {
-            if (monster.size == tailBuf.size) break;
+            if (monster.size === tailBuf.size) break;
             tailBuf.updateSize();
           }
           this.connectTail(tailBuf);
@@ -320,8 +326,8 @@ class Cube {
           monster.eat = true;
           scene.remove(monster.cube);
           // scene.remove(monster.text);
-          let index = bufFood.findIndex(item => item == i);
-          if(index == -1) bufFood.push(i);
+          let index = bufFood.findIndex(item => item === i);
+          if(index === -1) bufFood.push(i);
         } else {
           if (mouse.x > 0) monster.pos[0] = this.pos[0] + (deltaX + 0.15);
           else monster.pos[0] = this.pos[0] - (deltaX + 0.15);
@@ -335,12 +341,12 @@ class Cube {
   }
 
   eatBotAround() {
-    if (bufBots.length != 0) {
+    if (bufBots.length !== 0) {
       bots = deleteIndexesFromArray(bots, bufBots);
       bufBots = [];
     }
     bots.forEach((monster, i) => {
-      if (i != botState) {
+      if (i !== botState) {
         const minDist = monster.sizeDef;
         let deltaY = monster.pos[1] - this.pos[1];
         if (deltaY < 0) deltaY = -deltaY;
@@ -352,7 +358,7 @@ class Cube {
             tailBuf = new Cube(TAIL, INITIAL);
             tailBuf.create();
             while (true) {
-              if (monster.size == tailBuf.size) break;
+              if (monster.size === tailBuf.size) break;
               tailBuf.updateSize();
             }
             this.connectTail(tailBuf);
@@ -363,8 +369,8 @@ class Cube {
             monster.eat = true;
             scene.remove(monster.cube);
             scene.remove(monster.text);
-            let index = bufBots.findIndex(bufBot => bufBot == i);
-            if(index == -1) bufBots.push(i);
+            let index = bufBots.findIndex(bufBot => bufBot === i);
+            if(index === -1) bufBots.push(i);
           } else {
             if (mouse.x > 0) monster.pos[0] = this.pos[0] + (deltaX + 0.15);
             else monster.pos[0] = this.pos[0] - (deltaX + 0.15);
@@ -377,11 +383,8 @@ class Cube {
     });
   }
 
-  findNearestFood() {
-  }
-
   setStarBuffer() {
-    if (mouse.x == 0 && mouse.y == 0) this.ref = 1;
+    if (mouse.x === 0 && mouse.y === 0) this.ref = 1;
     else this.ref = moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
 
     this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
@@ -418,8 +421,8 @@ class Cube {
     this.tail.sort((a, b) => b.size - a.size)
     let i = 0, len = this.tail.length;
     while(i < len) {
-      if (i == 0) {
-        if (this.tail[i].size == this.size) {
+      if (i === 0) {
+        if (this.tail[i].size === this.size) {
           if(this.eatCount > 20)
           {
             this.eatCount = 0;
@@ -439,7 +442,7 @@ class Cube {
           return ;
         }
       } else {
-        if (this.tail[i].size == this.tail[i - 1].size) {
+        if (this.tail[i].size === this.tail[i - 1].size) {
           if(this.eatCount > 20) {
             this.tail[i - 1].updateSize();
             scene.remove(this.tail[i].cube);
@@ -463,8 +466,8 @@ class Cube {
     if (this.bufPos.length > 2000) this.bufPos.slice(this.bufPos.length - 2000, this.bufPos.length);
 
     this.tail.forEach((item, j) => {
-      var traceHis = 8;
-      if (mouseCount == 0) traceHis = 12;
+      let traceHis = 8;
+      if (mouseCount === 0) traceHis = 12;
       const arrIndex = Math.floor(this.bufAngle.length - (j + 1) * traceHis);
       if (arrIndex > 0) {
         item.setAngle(this.bufAngle[arrIndex]);
@@ -473,18 +476,18 @@ class Cube {
           item.pos[1] = this.bufPos[arrIndex][1];
           item.pos[2] = this.bufPos[arrIndex][2];
           if (mouse.y < 0.03 && mouse.y > -0.03) {
-            if (this.pos[0] == maxScaledWidth) item.pos[0] = maxScaledWidth - item.sizeDef * (j + 1);
-            else if (this.pos[0] == -maxScaledWidth) item.pos[0] = -maxScaledWidth + item.sizeDef * (j + 1);
+            if (this.pos[0] === maxScaledWidth) item.pos[0] = maxScaledWidth - item.sizeDef * (j + 1);
+            else if (this.pos[0] === -maxScaledWidth) item.pos[0] = -maxScaledWidth + item.sizeDef * (j + 1);
           } else {
-            if (this.pos[0] == maxScaledWidth) item.pos[0] = maxScaledWidth;
-            else if (this.pos[0] == -maxScaledWidth) item.pos[0] = -maxScaledWidth;
+            if (this.pos[0] === maxScaledWidth) item.pos[0] = maxScaledWidth;
+            else if (this.pos[0] === -maxScaledWidth) item.pos[0] = -maxScaledWidth;
           }
           if (mouse.x < 0.03 && mouse.x > -0.03) {
-            if (this.pos[1] == maxScaledHeight) item.pos[1] = maxScaledHeight - item.sizeDef * (j + 1);
-            else if (this.pos[1] == -maxScaledHeight) item.pos[1] = -maxScaledHeight + item.sizeDef * (j + 1);
+            if (this.pos[1] === maxScaledHeight) item.pos[1] = maxScaledHeight - item.sizeDef * (j + 1);
+            else if (this.pos[1] === -maxScaledHeight) item.pos[1] = -maxScaledHeight + item.sizeDef * (j + 1);
           } else {
-            if (this.pos[1] == maxScaledHeight) item.pos[1] = maxScaledHeight;
-            else if (this.pos[1] == -maxScaledHeight) item.pos[1] = -maxScaledHeight;
+            if (this.pos[1] === maxScaledHeight) item.pos[1] = maxScaledHeight;
+            else if (this.pos[1] === -maxScaledHeight) item.pos[1] = -maxScaledHeight;
           }
           item.setPos();
         }
@@ -503,7 +506,7 @@ class Cube {
     let neighbors = [...bots, ...food, star];
     countEnemy = 0;
     neighbors.forEach((neighbor, i) => {
-      if (botState != i) {
+      if (botState !== i) {
         this.rect = {
           left: this.pos[0] - scaledSize.width,
           right: this.pos[0] + scaledSize.width,
@@ -519,11 +522,11 @@ class Cube {
           let y = neighbor.pos[1] - this.pos[1];
           let distance = x * x + y * y;
           let theta;
-          if (x == 0) theta = 0;
+          if (x === 0) theta = 0;
           else theta = y / x;
 
           if (neighbor.size > this.size &&
-            (neighbor.type == BOT || neighbor.type == PERSON))
+            (neighbor.type === BOT || neighbor.type === PERSON))
             this.enemies.push({ size: neighbor.size, x: x, y: y, distance, theta });
           else if (neighbor.size < this.size)
             this.food.push({ size: neighbor.size, x: x, y: y, distance, theta });
@@ -535,8 +538,8 @@ class Cube {
   }
 
   detectDirection() {
-    let prob5to5 = (Math.random() * 10) <= 5 ? true : false;
-    let prob3to7 = (Math.random() * 10) <= 3 ? true : false;
+    let prob5to5 = (Math.random() * 10) <= 5;
+    let prob3to7 = (Math.random() * 10) <= 3;
     // if (prob3to7) {
     //   switch (this.direction) {
     //     case RAND: this.toRandom(); break;
@@ -547,8 +550,8 @@ class Cube {
     //   }
     // } else
     {
-      if (this.enemies.length == 0) {
-        if (this.food.length == 0) {
+      if (this.enemies.length === 0) {
+        if (this.food.length === 0) {
           this.toRandom();//E: X, F: X
           this.direction = RAND;
         } else {//E: X, F: O
@@ -561,7 +564,7 @@ class Cube {
           }
         }
       } else {
-        if (this.food.length == 0) {  //E: O, F: X
+        if (this.food.length === 0) {  //E: O, F: X
           // if (prob5to5) this.toAntiDistance(); //to anti distance minimum
           // else this.toAntiTheta(); //to anti theta average
           this.toAntiDistance();
@@ -627,36 +630,27 @@ class Cube {
     if (def.x > 0) {
       this.next.x = -1;
       this.next.y = -def.theta;
-      if (this.pos[0] == maxScaledWidth) this.next.x = -Math.random();
-      if (this.pos[0] == -maxScaledWidth) this.next.x = Math.random();
+      if (this.pos[0] === maxScaledWidth) this.next.x = -Math.random();
+      if (this.pos[0] === -maxScaledWidth) this.next.x = Math.random();
     }
     else {
       this.next.x = 1;
       this.next.y = def.theta;
-      if (this.pos[1] == maxScaledHeight) this.next.y = -Math.random()
-      if (this.pos[1] == -maxScaledHeight) this.next.y = Math.random()
+      if (this.pos[1] === maxScaledHeight) this.next.y = -Math.random()
+      if (this.pos[1] === -maxScaledHeight) this.next.y = Math.random()
     }
     this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y * this.next.y);
   }
 
-  toAntiTheta() {
-    // let def = this.enemies[0];
-    let def = star;
-    this.enemies.forEach(item => {
-
-    })
-
-  }
-
   toRandom() {
     this.next.x = this.next.x + (Math.random() - 0.5);
-    if (this.pos[0] == maxScaledWidth) this.next.x = -Math.random();
-    if (this.pos[0] == -maxScaledWidth) this.next.x = Math.random();
+    if (this.pos[0] === maxScaledWidth) this.next.x = -Math.random();
+    if (this.pos[0] === -maxScaledWidth) this.next.x = Math.random();
 
     this.next.y = this.next.y + (Math.random() - 0.5);
-    if (this.pos[1] == maxScaledHeight) this.next.y = -Math.random()
-    if (this.pos[1] == -maxScaledHeight) this.next.y = Math.random()
-    if (this.next.x == 0 && this.next.y == 0) this.ref = 1;
+    if (this.pos[1] === maxScaledHeight) this.next.y = -Math.random()
+    if (this.pos[1] === -maxScaledHeight) this.next.y = Math.random()
+    if (this.next.x === 0 && this.next.y === 0) this.ref = 1;
     else this.ref = moveSpeed.x / Math.sqrt(this.next.x * this.next.x + this.next.y * this.next.y);
   }
 }
@@ -713,12 +707,6 @@ function sortArray(cube) {
   return cube.size.sort((a, b) => b - a);
 }
 
-function tableData(personCube, Bots) {
-  Bots.push(personCube);
-  return sortArray(Bots);
-  console.log(Bots);
-}
-
 function makeInitialFood() {
   for (let i = 0; i < MAX_INIT_FOOD; i++) {
     // buf = Math.floor(Math.random() * 1000) % 5;
@@ -754,15 +742,15 @@ function makeBot() {
 
       let botText = new Text();
       botText.fontSize = 0.15;
-      botText.fontWeight = 'bold'
+      botText.fontWeight = 'bold';
       botText.color = '#ffffff';
       botText.geometry.center();
-      botText.position.z = 0.3
+      botText.position.z = 0.3;
 
       for (let i = 0; i < bots.length; i++) {
         botText.text = `Bot${i}`
         bots[bots.length-1].cube.add(botText);
-        document.addEventListener('mousemove', (event) => {
+        document.addEventListener('mousemove', () => {
           botText.rotation.z = bots[i].cube.rotation.z * (-1)
         });
       }
@@ -825,12 +813,50 @@ function setHistory() {
     food: tFood,
   });
 
-  if(trace[bufPos].length === 1000) {
+  if(trace[bufPos].length < 1000) {
     localStorage.setItem(`trace_${traceCount}`, JSON.stringify(trace[bufPos]));
     if(bufPos > 2) bufPos = 0;
     else bufPos++;
     traceCount++;
   }
+}
+
+function loadGameState() {
+  initPro();
+  mainEngine();
+  // running  = true;
+}
+
+function initPro() {
+    lightControl();
+
+    nameText = new Text();
+    nameText.fontSize = 0.1;
+    nameText.fontWeight = 'bold'
+    nameText.color = '#ffffff';
+    nameText.geometry.center();
+    nameText.position.x = -0.2
+    nameText.position.z = 0.6
+    nameText.text = `you`
+
+    threeAngle = new Text();
+    threeAngle.fontSize = 0.4;
+    threeAngle.fontWeight = 'bold';
+    threeAngle.color = '#ffffff';
+    threeAngle.geometry.center();
+    threeAngle.fillOpacity = 0.7
+    threeAngle.position.x = 0.6
+    threeAngle.position.y = 0.25
+    threeAngle.rotation.z = -Math.PI / 2
+    threeAngle.text = `🔺`;
+
+    star = new Cube(PERSON, INITIAL);
+    star.create();
+    star.cube.add(nameText);
+    star.cube.add(threeAngle);
+
+    addPlane();
+    drawX();
 }
 
 function getHistory() {
@@ -886,19 +912,19 @@ function drawController() {
   // Draw the outer circle
   ctx.beginPath();
   ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#2b2d42';  // Outer circle color
+  ctx.fillStyle = '#2e8588';  // Outer circle color
   ctx.fill();
   ctx.lineWidth = 5;
-  ctx.strokeStyle = '#1f2430'; // Outer circle border color
+  ctx.strokeStyle = '#42eacb'; // Outer circle border color
   ctx.stroke();
 
   // Draw the inner circle
   ctx.beginPath();
   ctx.arc(innerCircleX, innerCircleY, innerRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#3b3f53';  // Inner circle color
+  ctx.fillStyle = '#48558e';  // Inner circle color
   ctx.fill();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = '#262a39'; // Inner circle border color
+  ctx.strokeStyle = '#1ebfb3'; // Inner circle border color
   ctx.stroke();
 }
 
@@ -915,6 +941,10 @@ function animate() {
     star.mergeTailEngine();
     star.traceEngine();
 
+    nameText.text = playerName;
+    console.log(playerName)
+
+    star.cube.add(nameText);
     //camera control
     cameraCtrl();
   }
@@ -951,11 +981,32 @@ function animate() {
 
   updateTable(star, bots);
 
-  setHistory();
+  // setHistory();
+  captureFrame();
+
+  // saveGameState();
+}
+
+function captureFrame() {
+
+  // Read the pixels from the WebGL context
+  gl.readPixels(0, 0, glWidth, glHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+  savedFrames.push({ pixels, glWidth, glHeight });
+
+  console.log("Frame saved: " + savedFrames.length);
 }
 
 
+function mainEngine() {
+  makeInitialFood();
 
+  animate();
+  running = false;
+}
+//
+// function viewReplay() {
+//   scene.clear();
+// }
 
 //----------------------------------------start pro--------------------------------------------//
 
@@ -1012,11 +1063,11 @@ controllerCanvas.addEventListener('mouseleave', () => {
   isDragging = false;
 });
 
-controllerCanvas.addEventListener('mousedown', (event) => {
+controllerCanvas.addEventListener('mousedown', () => {
   controllable = true;
 });
 
-webgl.addEventListener('click', (event) => {
+webgl.addEventListener('click', () => {
   if(touch) {
 
   } else {
@@ -1040,7 +1091,7 @@ gameForm.addEventListener("submit", function(event) {
   event.preventDefault(); // Prevent the default form submission
 
   // Get the player name from the input field
-  const playerName = document.getElementById("playerName").value;
+  playerName = document.getElementById("playerName").value;
 
   // Get the selected play mode (either "Com play" or "Phone play")
   if (document.getElementById("com").checked) {
@@ -1053,13 +1104,11 @@ gameForm.addEventListener("submit", function(event) {
   // You can proceed with further actions like hiding the form or starting the game
   gameForm.style.display = "none";
 
-  nameText.text = playerName;
-
-  star.cube.add(nameText);
-
   running = true;
+
   animate();
 });
+
 
 document.addEventListener('mousemove', (event) => {
   nameText.rotation.z = (-1) * star.cube.rotation.z;
@@ -1085,6 +1134,23 @@ document.addEventListener('mousemove', (event) => {
   }
 });
 
+document.getElementById("closeAlert").addEventListener("click", function() {
+  document.getElementById("customAlert").style.display = 'none';
+});
+document.getElementById("viewReplay").addEventListener("click", function() {
+  document.getElementById("customAlert").style.display = 'none';
+  // loadGameState();
+  // render();
+  // scene.clear();
+  // bots = [];
+  // food = [];
+  // star = null;
+  // replay = true;
+  // running = true;
+  // initPro();
+  // animate();
+});
+
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
@@ -1093,43 +1159,42 @@ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
 const renderer = new THREE.WebGLRenderer({
   canvas: canvas
 });
-
-lightControl();
+const gl = renderer.getContext();
+const glWidth = gl.drawingBufferWidth;
+const glHeight = gl.drawingBufferHeight;
+const pixels = new Uint8Array(glWidth * glHeight * 4); // RGBA
 
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for more natural results
 
 
-let nameText = new Text();
-nameText.fontSize = 0.1;
-nameText.fontWeight = 'bold'
-nameText.color = '#ffffff';
-nameText.geometry.center();
-nameText.position.x = -0.2
-nameText.position.z = 0.6
-nameText.text = `you`
-
-let threeAngle = new Text();
-threeAngle.fontSize = 0.4
-threeAngle.fontWeight = 'bold'
-threeAngle.color = '#ffffff';
-threeAngle.geometry.center();
-threeAngle.fillOpacity = 0.7
-threeAngle.position.x =  0.6
-threeAngle.position.y = 0.25
-threeAngle.rotation.z =  - Math.PI/2
-threeAngle.text = `🔺`;
-
-//create star, this is just you.
-star = new Cube(PERSON, INITIAL);
-star.create();
-star.cube.add(nameText);
+initPro();
+mainEngine();
 
 
-star.cube.add(threeAngle)
+let reviewIndex = 0;
+let texture = gl.createTexture();
+function replayFrames() {
+  if (savedFrames.length === 0) {
+    console.log("No frames recorded!");
+    return;
+  }
 
-addPlane();
-drawX();
-makeInitialFood();
+  reviewIndex = 0;
 
-animate();
-running = false;
+  function drawFrame() {
+    if (reviewIndex >= savedFrames.length) return;
+
+    const frame = savedFrames[reviewIndex];
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, frame.width, frame.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, frame.pixels);
+
+    // Render the texture onto a fullscreen quad
+    renderer.render(fullscreenScene, fullscreenCamera);
+
+    reviewIndex++;
+    requestAnimationFrame(drawFrame);
+  }
+
+  drawFrame();
+}

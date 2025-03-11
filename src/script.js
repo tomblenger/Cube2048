@@ -1,10 +1,6 @@
 import * as THREE from 'three';
 import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
-import {iridescence} from "three/nodes";
-import {ShaderLib as item} from "three";
-
-let savedFrames = [];
 
 const controllerCanvas = document.getElementById('controllerCanvas');
 const webgl = document.getElementById('webgl');
@@ -30,8 +26,9 @@ const ANTI_DISTANCE = 2;
 const RAND = 3;
 
 let nameText;
-let playerName = "PPP";
-let replay = false;
+let frameCount = 0;
+let runningReplay = true;
+let playerName = "";
 let threeAngle;
 let touch = false;
 let controllable = false;
@@ -79,6 +76,7 @@ const color = [
 
 let bProduce = true;
 let star;
+let replayBots = [];
 let bots = [];
 let food = [];
 let lineX = [];
@@ -94,9 +92,7 @@ let bufBots = [];
 let tailBuf = null;
 let mouseCount = 0;
 
-var trace = [];
-let bufPos = 0;
-let traceCount = 0;
+let trace = [];
 
 let innerCircleX = controllerCanvas.width / 2;
 let innerCircleY = controllerCanvas.height / 2;
@@ -126,16 +122,6 @@ function randomizePosition(max) {
   let position;
   position = (Math.random() - 0.5) * 2 * max;
   return position;
-}
-
-function insertArray(arr, item, index) {
-  let halfBefore, halfAfter;
-  halfBefore = arr.slice(0, index);
-  halfBefore.push(item);
-  if ((index + 1) < arr.length) halfAfter = arr.slice(index, arr.length);
-  else halfAfter = [];
-
-  return halfBefore.concat(halfAfter);
 }
 
 function deleteFromArray(arr, index) {
@@ -168,6 +154,7 @@ class Cube {
     this.eat = false;
     this.count = 0;
     this.direction = RAND;
+    this.newTail = [];
 
     this.next = {
       x: 0,
@@ -231,6 +218,18 @@ class Cube {
     this.setPos();
   }
 
+  smallerSize() {
+    this.size = this.size / 2;
+
+    this.color = getColor(this.size);
+    this.material.color.set(this.color);
+
+    this.count++;
+    this.scale /= 1.05;
+    this.cube.scale.set(this.scale, this.scale, this.scale);
+    this.setPos();
+  }
+
   createText() {
     //create text and draw
     this.text.text = this.size < 1000 ? `${this.size}` : `${Math.floor(this.size / 1000)}K`;
@@ -255,7 +254,6 @@ class Cube {
 
     this.pos = pos;
     this.cube.position.set(pos[0], pos[1], 0.1);
-
     if (this.size < 10) {
       this.text.position.set( - this.sizeDef/5.8, this.sizeDef/2.8, this.sizeDef - 0.199);
     } else if (this.size < 100) {
@@ -276,7 +274,6 @@ class Cube {
     this.tail.push(children);
   }
 
-
   eatPlayerAround(player) {
     if (this.size > player.size) {
       const minDist = this.sizeDef + 0.13;
@@ -284,20 +281,10 @@ class Cube {
       if (deltaY < 0) deltaY = -deltaY;
       let deltaX = player.pos[0] - this.pos[0];
       if (deltaX < 0) deltaX = -deltaX;
-
       if ((deltaX < minDist) && deltaY < minDist) {
-        // Show the custom alert modal
         document.getElementById("customAlert").style.display = 'flex';
         document.getElementById("alertTitle").innerHTML = `GAME OVER ${botState}`;
-
-        // Add event listener to close the alert
-
         running = false;
-        // getHistory();
-        console.log(savedFrames);
-        // isRecording = false; // Stop capturing frames
-        replayFrames(); // Start reviewing
-
       }
     }
   }
@@ -323,9 +310,6 @@ class Cube {
             tailBuf.updateSize();
           }
           this.connectTail(tailBuf);
-          // monster.pos[0] = this.pos[0];
-          // monster.pos[1] = this.pos[1];
-          // monster.pos[2] = this.pos[2];
           this.setPos();
           monster.eat = true;
           scene.remove(monster.cube);
@@ -536,7 +520,7 @@ class Cube {
   }
 
   detectDirection() {
-    let prob5to5 = (Math.random() * 10) <= 5;
+    let prob5to5 = (Math.random() * 10) <= 1.5;
     let prob3to7 = (Math.random() * 10) <= 3;
     // if (prob3to7) {
     //   switch (this.direction) {
@@ -671,7 +655,7 @@ function drawX() {
     color: 'rgb(123,182,255)',
     dashSize: 0.04,     // Length of dashes (small for dots)
     gapSize: 0.5,      // Space between dashes (adjust for dot effect)
-    linewidth: 20
+    lineWidth: 20
   });
   const yCount = maxScaledHeight;
 
@@ -701,18 +685,29 @@ function cameraCtrl() {
   camera.rotation.x = Math.PI / 7;
 }
 
-function sortArray(cube) {
-  return cube.size.sort((a, b) => b - a);
-}
-
 function makeInitialFood() {
   for (let i = 0; i < MAX_INIT_FOOD; i++) {
-    // buf = Math.floor(Math.random() * 1000) % 5;
     food.push(new Cube(FOOD, INITIAL));
     food[food.length - 1].create();
-    // for (let j = 0; j < buf; j++) food[food.length - 1].updateSize();
   }
 }
+
+function makeInitHideTail(cube) {
+  for (let i = 0; i < 10; i++) {
+    cube.newTail.push(new Cube(TAIL, INITIAL));
+    cube.newTail[cube.newTail.length - 1].create();
+    scene.remove(cube.newTail[cube.newTail.length - 1].cube);
+  }
+}
+
+function makeInitHideBots() {
+  for (let i = 0; i < MAX_BOT; i++) {
+    replayBots.push(new Cube(BOT, INITIAL));
+    replayBots[replayBots.length - 1].create();
+    scene.remove(replayBots[replayBots.length - 1].cube);
+  }
+}
+
 
 function makeFood() {
   if (cycleFood < TIME_SPACE_FOOD) cycleFood++;
@@ -748,9 +743,9 @@ function makeBot() {
       for (let i = 0; i < bots.length; i++) {
         botText.text = `Bot${i}`
         bots[bots.length-1].cube.add(botText);
-        document.addEventListener('mousemove', () => {
-          botText.rotation.z = bots[i].cube.rotation.z * (-1)
-        });
+        // document.addEventListener('mousemove', () => {
+        //   botText.rotation.z = bots[i].cube.rotation.z * (-1)
+        // });
       }
 
       for (let i = 0; i < buf; i++) bots[bots.length - 1].updateSize();
@@ -797,49 +792,44 @@ function extract(cube) {
 }
 
 function restore(cube, info) {
-  if(!(cube)) {
-    cube = new Cube(TAIL, INITIAL);
-    cube.create();
-    cube.cube.add(nameText);
-    cube.cube.add(threeAngle);
-  }
+  scene.add(cube.cube);
   cube.pos[0] = info.x;
   cube.pos[1] = info.y;
   cube.cube.rotation.z = info.direction;
   cube.setPos();
   while (true) {
     if (cube.size === info.size) break;
-    cube.updateSize();
+    else if(cube.size < info.size) cube.updateSize();
+    else cube.smallerSize();
   }
+  if(cube.newTail.length !== 0) {
+    cube.newTail.forEach(item => {
+      scene.remove(item.cube)
+    })
 
-  if(info.tail.length > 0) {
-    cube.tail = [];
     info.tail.forEach((item, i) => {
-      let bufTail;
-      bufTail = new Cube(TAIL, INITIAL);
-      bufTail.create();
-
-      bufTail.pos[0] = item.x;
-      bufTail.pos[1] = item.y;
-      bufTail.cube.rotation.z = item.direction;
-      bufTail.setPos();
+      cube.newTail[i].pos[0] = item.x;
+      cube.newTail[i].pos[1] = item.y;
+      cube.newTail[i].cube.rotation.z = item.direction;
+      cube.newTail[i].setPos();
       while (true) {
-        if (bufTail.size === item.size) break;
-        bufTail.updateSize();
+        if (cube.newTail[i].size === item.size) break;
+        else if (cube.newTail[i].size < item.size) cube.newTail[i].updateSize();
+        else cube.newTail[i].smallerSize();
       }
-      cube.tail.push(bufTail)
+      scene.add(cube.newTail[i].cube);
     });
   }
+  return cube;
 }
 
 function setHistory() {
-  //star history
+
   let tStar, tBot = [], tFood = [];
   tStar = extract(star);
-  //bot history
+
   bots.forEach(bot => tBot.push(extract(bot)));
 
-  //food history
   food.forEach(foodItem => tFood.push(extract(foodItem)));
 
   trace.push({
@@ -847,65 +837,40 @@ function setHistory() {
     bot: tBot,
     food: tFood,
   });
-
-  // console.log(trace)
-  // if(trace.length >= 50) {
-  //   console.log(trace)
-  //   // localStorage.setItem(`history_${traceCount}`, JSON.stringify(trace));
-  //   trace = [];
-  //   traceCount++;
-  // }
-}
-
-function loadGameState() {
-  initPro();
-  mainEngine();
-  // running  = true;
 }
 
 function initPro() {
-    lightControl();
+  lightControl();
 
-    nameText = new Text();
-    nameText.fontSize = 0.1;
-    nameText.fontWeight = 'bold'
-    nameText.color = '#ffffff';
-    nameText.geometry.center();
-    nameText.position.x = -0.2
-    nameText.position.z = 0.6
-    nameText.text = `you`
+  nameText = new Text();
+  nameText.fontSize = 0.1;
+  nameText.fontWeight = 'bold'
+  nameText.color = '#ffffff';
+  nameText.geometry.center();
+  nameText.position.x = -0.2
+  nameText.position.z = 0.6
+  nameText.text = `you`
 
-    threeAngle = new Text();
-    threeAngle.fontSize = 0.4;
-    threeAngle.fontWeight = 'bold';
-    threeAngle.color = '#ffffff';
-    threeAngle.geometry.center();
-    threeAngle.fillOpacity = 0.7
-    threeAngle.position.x = 0.6
-    threeAngle.position.y = 0.25
-    threeAngle.rotation.z = -Math.PI / 2
-    threeAngle.text = `🔺`;
+  threeAngle = new Text();
+  threeAngle.fontSize = 0.4;
+  threeAngle.fontWeight = 'bold';
+  threeAngle.color = '#ffffff';
+  threeAngle.geometry.center();
+  threeAngle.fillOpacity = 0.7
+  threeAngle.position.x = 0.6
+  threeAngle.position.y = 0.25
+  threeAngle.rotation.z = -Math.PI / 2
+  threeAngle.text = `🔺`;
 
-    star = new Cube(PERSON, INITIAL);
-    star.create();
-    // star.cube.add(nameText);
-    // star.cube.add(threeAngle);
-
-    addPlane();
-    drawX();
-}
-
-function getHistory(count) {
-  // let storedKeys = Object.keys(localStorage).filter(key => key.startsWith("trace_"));
-  // let storedValues = [], mergedValues = [];
-  // if(storedKeys.length !== 0) {
-  //   storedValues = storedKeys.map(key => JSON.parse(localStorage.getItem(key)));
-  //   mergedValues = storedValues.reduce((acc, curr) => acc.concat(curr), []);
-  // }
-  // let traceView = [...mergedValues, ...trace[bufPos]];
-  // traceView = JSON.stringify(traceView);
-  // document.getElementById('logView').innerHTML = `${traceView}`;
-  return JSON.parse(localStorage.getItem(`history_${count}`));
+  star = new Cube(PERSON, INITIAL);
+  star.create();
+  star.cube.add(nameText);
+  star.cube.add(threeAngle);
+  makeInitHideTail(star);
+  makeInitHideBots();
+  replayBots.forEach(bot => makeInitHideTail(bot));
+  addPlane();
+  drawX();
 }
 
 function updateTable(person, bots) {
@@ -939,11 +904,7 @@ function updateTable(person, bots) {
   }
 }
 
-
-
-
-
-function drawController() {
+function drawController(x, y) {
   const centerX = controllerCanvas.width / 2;
   const centerY = controllerCanvas.height / 2;
 
@@ -968,7 +929,11 @@ function drawController() {
 
   // Draw the inner circle
   ctx.beginPath();
-  ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+  if(x === undefined || y === undefined) {
+    ctx.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+  } else {
+    ctx.arc(x, y, innerRadius, 0, Math.PI * 2);
+  }
   ctx.fillStyle = '#48558e'; // Inner circle color
   ctx.fill();
   ctx.lineWidth = 3;
@@ -1005,36 +970,28 @@ function drawArrow(x, y, direction) {
     ctx.lineTo(x - arrowSize / 2, y + arrowSize / 2);
     ctx.lineTo(x + arrowSize, y);
   }
-
   ctx.fill();
 }
-
 
 function animate() {
   if (!running) return;
   requestAnimationFrame(animate);
 
   if (star) {
-    //set position and angle
     star.setStarBuffer();
     star.setStarPosAngle();
-
-    //engines
     star.mergeTailEngine();
     star.traceEngine();
 
     nameText.text = playerName;
-
-    star.cube.add(nameText);
-    //camera control
     cameraCtrl();
   }
-  if (bots.length > 1) {
+
+  if (bots.length > 0) {
     bots.forEach((bot, i) => {
       botState = i;
       bot.setBotBuffer();
       bot.setBotPosAngle();
-      //engines
       bot.mergeTailEngine();
       bot.traceEngine();
     })
@@ -1061,47 +1018,102 @@ function animate() {
   }
 
   updateTable(star, bots);
-
   setHistory();
-  // captureFrame();
-
-  // saveGameState();
-}
-
-function captureFrame() {
-
-  // Read the pixels from the WebGL context
-  gl.readPixels(0, 0, glWidth, glHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-  savedFrames.push({ pixels, glWidth, glHeight });
-
-  console.log("Frame saved: " + savedFrames.length);
 }
 
 function mainEngine() {
   makeInitialFood();
-
   animate();
   running = false;
 }
-//
-// function viewReplay() {
-//   scene.clear();
-// }
+
+function viewReplayEngine() {
+
+  if (!runningReplay) return;
+  requestAnimationFrame(viewReplayEngine);
+
+  if(frameCount < trace.length-2) frameCount ++;
+  else runningReplay = false;
+  // if(frameCount % 2 === 0)
+  
+  {
+    //star
+    star = restore(star, trace[frameCount].star);
+    nameText.rotation.z = (-1) * star.cube.rotation.z;
+    //food
+    trace[frameCount].food.forEach((info, i) => {
+      if (food.length > i) food[i] = restore(food[i], info);
+    })
+    //bots
+    replayBots.forEach(bot => scene.remove(bot.cube))
+    trace[frameCount].bot.forEach((info, i) => {
+      replayBots[i] = restore(replayBots[i], info);
+    })
+  }
+  cameraCtrl();
+  render();
+}
 
 //----------------------------------------start pro--------------------------------------------//
-
 
 window.onload = function() {
   drawController();
 };
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+});
+
+document.addEventListener('mousemove', (event) => {
+  nameText.rotation.z = (-1) * star.cube.rotation.z;
+  canvasPos = getElementPositions(webgl);
+  let deltaSize = {
+    width: -canvasPos.width + 300,
+    height: -canvasPos.height + 250,
+  }
+  if(touch) {
+    if(controllable && isDragging) {
+      let calRadius = ((canvasPos.width - outerRadius / 2 - event.clientX) * (canvasPos.width - outerRadius / 2 - event.clientX) +
+        (canvasPos.height - outerRadius / 2 - event.clientY) * (canvasPos.height - outerRadius / 2 - event.clientY)) / 4;
+      if (calRadius < (outerRadius * outerRadius)) {
+        mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
+        mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
+        mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
+      }
+    }
+  } else {
+    mouse.x = (event.clientX / sizes.width) * 2 - 1;
+    mouse.delta = 1 - (event.clientX / sizes.width) * 2;
+    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+  }
+});
+
+document.getElementById("closeAlert").addEventListener("click", function() {
+  document.getElementById("customAlert").style.display = 'none';
+});
+
+document.getElementById("viewReplay").addEventListener("click", function() {
+  document.getElementById("customAlert").style.display = 'none';
+  scene.remove(star.cube);
+
+  star.tail.forEach((item) => scene.remove(item.cube));
+  star.newTail.forEach(item => scene.remove(item.cube));
+
+  bots.forEach(bot => {
+    scene.remove(bot.cube);
+    bot.tail.forEach((item) => scene.remove(item.cube));
+  });
+
+  food.forEach(item => scene.remove(item.cube));
+  viewReplayEngine();
+});
 
 controllerCanvas.addEventListener('mousedown', (event) => {
   const mouseX = event.offsetX;
   const mouseY = event.offsetY;
 
-  // Check if the mouse is inside the inner circle to start dragging
   const dx = mouseX - innerCircleX;
   const dy = mouseY - innerCircleY;
+
   if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
     isDragging = true;
   }
@@ -1112,7 +1124,6 @@ controllerCanvas.addEventListener('mousemove', (event) => {
     const mouseX = event.offsetX;
     const mouseY = event.offsetY;
 
-    // Calculate the movement of the inner circle
     const dx = mouseX - controllerCanvas.width / 2;
     const dy = mouseY - controllerCanvas.height / 2;
 
@@ -1131,12 +1142,8 @@ controllerCanvas.addEventListener('mousemove', (event) => {
     }
 
     // Redraw the controller with the updated inner circle position
-    drawController();
+    drawController(innerCircleX, innerCircleY);
   }
-});
-
-controllerCanvas.addEventListener('mouseup', () => {
-  isDragging = false;
 });
 
 controllerCanvas.addEventListener('mouseleave', () => {
@@ -1146,6 +1153,10 @@ controllerCanvas.addEventListener('mouseleave', () => {
 controllerCanvas.addEventListener('mousedown', () => {
   controllable = true;
 });
+
+controllerCanvas.addEventListener('mouseup', () => {
+  drawController();
+})
 
 webgl.addEventListener('click', () => {
   if(touch) {
@@ -1189,129 +1200,12 @@ gameForm.addEventListener("submit", function(event) {
   animate();
 });
 
-
-document.addEventListener('mousemove', (event) => {
-  nameText.rotation.z = (-1) * star.cube.rotation.z;
-  canvasPos = getElementPositions(webgl);
-  let deltaSize = {
-    width: -canvasPos.width + 300,
-    height: -canvasPos.height + 250,
-  }
-  if(touch) {
-    if(controllable) {
-      let calRadius = ((canvasPos.width - outerRadius / 2 - event.clientX) * (canvasPos.width - outerRadius / 2 - event.clientX) +
-        (canvasPos.height - outerRadius / 2 - event.clientY) * (canvasPos.height - outerRadius / 2 - event.clientY)) / 4;
-      if (calRadius < (outerRadius * outerRadius)) {
-        mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
-        mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
-        mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
-      }
-    }
-  } else {
-    mouse.x = (event.clientX / sizes.width) * 2 - 1;
-    mouse.delta = 1 - (event.clientX / sizes.width) * 2;
-    mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-  }
-});
-
-document.getElementById("closeAlert").addEventListener("click", function() {
-  document.getElementById("customAlert").style.display = 'none';
-});
-document.getElementById("viewReplay").addEventListener("click", function() {
-  document.getElementById("customAlert").style.display = 'none';
-  // loadGameState();
-  // render();
-  // scene.clear();
-  // bots = [];
-  // food = [];
-  // star = null;
-  // replay = true;
-  // running = true;
-  scene.clear();
-  initPro();
-  viewReplayEngine();
-  // animate();
-});
-
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
-
-const renderer = new THREE.WebGLRenderer({
-  canvas: canvas
-});
-const gl = renderer.getContext();
-const glWidth = gl.drawingBufferWidth;
-const glHeight = gl.drawingBufferHeight;
-const pixels = new Uint8Array(glWidth * glHeight * 4); // RGBA
-
+const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for more natural results
-
 
 initPro();
 mainEngine();
-
-
-let reviewIndex = 0;
-let texture = gl.createTexture();
-function replayFrames() {
-  if (savedFrames.length === 0) {
-    console.log("No frames recorded!");
-    return;
-  }
-
-  reviewIndex = 0;
-
-  function drawFrame() {
-    if (reviewIndex >= savedFrames.length) return;
-
-    const frame = savedFrames[reviewIndex];
-
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, frame.width, frame.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, frame.pixels);
-
-    // Render the texture onto a fullscreen quad
-    renderer.render(fullscreenScene, fullscreenCamera);
-
-    reviewIndex++;
-    requestAnimationFrame(drawFrame);
-  }
-
-  drawFrame();
-}
-
-let countReplay = 0;
-let frameCount = 0;
-let bufReplay = [];
-let runningReplay = true;
-
-function viewReplayEngine() {
-  scene.clear();
-  initPro();
-
-  if (!runningReplay) return;
-  requestAnimationFrame(viewReplayEngine);
-
-  if(frameCount < trace.length) frameCount += 2;
-
-  restore(star, trace[frameCount].star);
-  bots = [];
-  trace[frameCount].bot.forEach((item, i) => {
-    let bufBot;
-    bufBot = new Cube(TAIL, INITIAL);
-    bufBot.create();
-    restore(bufBot, item);
-    bots.push(bufBot);
-  });
-  food = [];
-  trace[frameCount].food.forEach((item, i) => {
-    let bufFood;
-    bufFood = new Cube(TAIL, INITIAL);
-    bufFood.create();
-    restore(bufFood, item);
-    bots.push(bufFood);
-  });
-  cameraCtrl();
-  render();
-}

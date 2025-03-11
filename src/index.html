@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 Cubic</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="css/customAlert.css">
+    <link rel="stylesheet" href="css/startForm.css">
+
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
@@ -18,56 +20,61 @@
 
         <!-- Game Input Form -->
         <form onsubmit="event.preventDefault()" id="game-form" class="text-center">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Enter Player Name</h2>
-            <input type="text" id="playerName" class="border border-gray-300 p-2 mb-4 rounded-md" placeholder="Enter your name" required />
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Cubes 2048.io</h2>
+            <div id="inputWrapper">
+                <div id="userIcon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="User">
+                </div>
+                <input type="text" id="playerName" placeholder="Enter Your Name" required />
+            </div>
+
             <br />
-            <div class="mt-4">
-                <label class="inline-flex items-center mr-4">
-                    <input type="radio" id="com" name="playMode" class="form-radio text-blue-500" checked />
-                    <span class="ml-2 text-gray-700">Com play</span>
+            <div class="mt-6 flex justify-center space-x-6">
+                <label class="relative flex items-center cursor-pointer">
+                    <input type="radio" id="com" name="playMode" class="hidden peer" checked />
+                    <span class="px-6 py-2 text-lg font-semibold text-gray-700 bg-white border-2 border-blue-500 rounded-full shadow-md transition-all peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-700 hover:bg-blue-400 hover:text-white">
+                        Desktop
+                    </span>
                 </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" id="phone" name="playMode" class="form-radio text-blue-500"/>
-                    <span class="ml-2 text-gray-700">Phone play</span>
+                <label class="relative flex items-center cursor-pointer">
+                    <input type="radio" id="phone" name="playMode" class="hidden peer" />
+                    <span class="px-6 py-2 text-lg font-semibold text-gray-700 bg-white border-2 border-blue-500 rounded-full shadow-md transition-all peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-700 hover:bg-blue-400 hover:text-white">
+                        Joystick
+                    </span>
                 </label>
             </div>
-            <button id="startButton" type="submit" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mt-4">
-                Start Game
+            <button id="startButton">
+                <span class="play-icon">▶</span>
+                TAP TO START
             </button>
         </form>
     </div>
-    <div class="container mx-auto my-8">
-
-        <div class="absolute top-5 right-4  p-4 rounded-lg shadow-lg">
-            <table id="leaderboard" class="text-lg text-gray-300 border border-separated rounded-lg">
-                <thead class="rounded-lg">
-                    <tr class="rounded-lg">
-                        <th class="rounded-lg text-center border border-white border-separated py-2 px-2">Player/Bot</th>
-                        <th class="rounded-lg text-center border border-white border-separated py-2 px-2">Size</th>
-                    </tr>
-                </thead>
-                <tbody class="rounded-lg">
+    <div class="leaderboard-container">
+        <table id="leaderboard">
+            <tbody>
                 <tr id="player-row">
-                    <td class="text-center border border-white border-separated py-1">You</td>
-                    <td id="player-size" class="text-center border border-white border-separated py-1">2</td>
+                    <td class="rank">1</td>
+                    <td class="name">you</td>
+                    <td id="player-size" class="score">2</td>
                 </tr>
-                </tbody>
-            </table>
-        </div>
+            </tbody>
+        </table>
     </div>
 
-    <div id="customAlert" class="modal" style="display: none">
-        <div class="modal-content">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4" id="alertTitle">Game Info</h3>
-            <p id="alertMessage" class="text-gray-700"></p>
+    <div id="customAlert" class="kill_modal" style="display: none;">
+        <div class="kill_modal-content">
+            <h3 id="alertTitle">Killed</h3>
+            <p id="alertMessage">Your Score is</p>
 
-            <div class="mt-4">
-                <label class="items-center mr-4">
-                    <button id="viewReplay" class="bg-blue-500 text-white p-2 rounded-md mt-4 hover:bg-blue-600">View Replay</button>
-                </label>
-                <label class="items-center">
-                    <button id="closeAlert" class="bg-blue-500 text-white p-2 rounded-md mt-4 hover:bg-blue-600">Close</button>
-                </label>
+            <div class="decor-box">
+                <span id="countNum" class="countdown-number">2</span>
+            </div>
+
+            <div class="buttons">
+                <button id="viewReplay" class="btn btn-revive">
+                    <span class="icon">🎞️</span> Review?
+                </button>
+                <button id="closeAlert" class="btn btn-next">Restart</button>
             </div>
         </div>
     </div>

@@ -1,14 +1,11 @@
 import * as THREE from 'three';
 import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
-import {iridescence} from "three/nodes";
-import {ShaderLib as item} from "three";
-
-let savedFrames = [];
 
 const controllerCanvas = document.getElementById('controllerCanvas');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
+const gameOverForm = document.getElementById("customGameOver");
 const ctx = controllerCanvas.getContext('2d');
 
 const PERSON = 0;
@@ -30,12 +27,9 @@ const ANTI_DISTANCE = 2;
 const RAND = 3;
 
 let nameText;
-let countReplay = 0;
 let frameCount = 0;
-let bufReplay = [];
 let runningReplay = true;
 let playerName = "PPP";
-let replay = false;
 let threeAngle;
 let touch = false;
 let controllable = false;
@@ -98,10 +92,9 @@ let bufFood = [];
 let bufBots = [];
 let tailBuf = null;
 let mouseCount = 0;
+let gameOverCount = 0;
 
 var trace = [];
-let bufPos = 0;
-let traceCount = 0;
 
 let innerCircleX = controllerCanvas.width / 2;
 let innerCircleY = controllerCanvas.height / 2;
@@ -131,16 +124,6 @@ function randomizePosition(max) {
   let position;
   position = (Math.random() - 0.5) * 2 * max;
   return position;
-}
-
-function insertArray(arr, item, index) {
-  let halfBefore, halfAfter;
-  halfBefore = arr.slice(0, index);
-  halfBefore.push(item);
-  if ((index + 1) < arr.length) halfAfter = arr.slice(index, arr.length);
-  else halfAfter = [];
-
-  return halfBefore.concat(halfAfter);
 }
 
 function deleteFromArray(arr, index) {
@@ -302,8 +285,10 @@ class Cube {
       if (deltaX < 0) deltaX = -deltaX;
       if ((deltaX < minDist) && deltaY < minDist) {
         document.getElementById("customAlert").style.display = 'flex';
-        document.getElementById("alertTitle").innerHTML = `GAME OVER ${botState}`;
+        document.getElementById("alertTitle").innerHTML = `Killed ${botState}`;
+        document.getElementById("countNum").innerHTML = `${this.size}`;
         running = false;
+        runningReplay = true;
       }
     }
   }
@@ -372,9 +357,6 @@ class Cube {
               tailBuf.updateSize();
             }
             this.connectTail(tailBuf);
-            // monster.pos[0] = this.pos[0];
-            // monster.pos[1] = this.pos[1];
-            // monster.pos[2] = this.pos[2];
             this.setPos();
             monster.eat = true;
             scene.remove(monster.cube);
@@ -444,7 +426,6 @@ class Cube {
             return ;
           } else this.eatCount ++;
         } else if (this.tail[i].size > this.size) {
-          // alert();
           while (this.size < this.tail[i].size) {
             this.updateSize();
           }
@@ -466,7 +447,6 @@ class Cube {
           }
         }
       }
-      // len = this.tail.length;
       i++;
     }
   }
@@ -544,15 +524,6 @@ class Cube {
   detectDirection() {
     let prob5to5 = (Math.random() * 10) <= 1.5;
     let prob3to7 = (Math.random() * 10) <= 3;
-    // if (prob3to7) {
-    //   switch (this.direction) {
-    //     case RAND: this.toRandom(); break;
-    //     case DISTANCE: this.toDistance(); break;
-    //     case ANTI_DISTANCE: this.toAntiDistance(); break;
-    //     case SIZE: this.toSize(); break;
-    //     default: this.toRandom();
-    //   }
-    // } else
     {
       if (this.enemies.length === 0) {
         if (this.food.length === 0) {
@@ -569,14 +540,10 @@ class Cube {
         }
       } else {
         if (this.food.length === 0) {  //E: O, F: X
-          // if (prob5to5) this.toAntiDistance(); //to anti distance minimum
-          // else this.toAntiTheta(); //to anti theta average
           this.toAntiDistance();
           this.direction = ANTI_DISTANCE;
         } else {//E: O, F: O
           if (prob3to7) {
-            // if (prob5to5) this.toAntiDistance();
-            // else this.toAntiTheta();
             this.toAntiDistance();
             this.direction = ANTI_DISTANCE;
           } else {
@@ -895,21 +862,6 @@ function initPro() {
   drawX();
 }
 
-function getHistory(count) {
-  /*
-    let storedKeys = Object.keys(localStorage).filter(key => key.startsWith("trace_"));
-    let storedValues = [], mergedValues = [];
-    if(storedKeys.length !== 0) {
-      storedValues = storedKeys.map(key => JSON.parse(localStorage.getItem(key)));
-      mergedValues = storedValues.reduce((acc, curr) => acc.concat(curr), []);
-    }
-    let traceView = [...mergedValues, ...trace[bufPos]];
-    traceView = JSON.stringify(traceView);
-    document.getElementById('logView').innerHTML = `${traceView}`;
-  */
-  return JSON.parse(localStorage.getItem(`history_${count}`));
-}
-
 function updateTable(person, bots) {
 
   if (cycleTable < TIME_SPACE_TABLE) cycleTable++;
@@ -929,13 +881,20 @@ function updateTable(person, bots) {
 
     // Populate the table with sorted data
 
-    sortLimit.forEach(data => {
+    sortLimit.forEach((data, i) => {
       const row = document.createElement('tr');
       const name = data.id === "You" ? "You" : `Bot ${data.id}`
-      row.innerHTML = `
-      <td class="text-center border border-white border-separated py-1">${name}</td>
-      <td class="text-center border border-white border-separated py-1">${data.cube.size}</td>
-    `;
+      row.innerHTML = data.id === "You" ?
+          `<tr class="highlight">
+            <td class="rank">${i + 1}</td>
+            <td class="name player-name">${playerName}</td>
+            <td class="score">${data.cube.size}</td>
+          </tr>` :
+          `<tr>
+            <td class="rank">${i + 1}</td>
+            <td class="name">${name}</td>
+            <td class="score">${data.cube.size}</td>
+          </tr>`;
       tbody.appendChild(row);
     });
   }
@@ -1064,20 +1023,22 @@ function mainEngine() {
   running = false;
 }
 
-function include(item, rect) {
-  return item.x > rect.left &&
-      item.x < rect.right &&
-      item.y > rect.bottom &&
-      item.y < rect.top;
-}
-
 function viewReplayEngine() {
 
   if (!runningReplay) return;
   requestAnimationFrame(viewReplayEngine);
 
   if(frameCount < trace.length-2) frameCount ++;
-  else runningReplay = false;
+  else {
+    // runningReplay = false;
+    // animate();
+    if(gameOverCount < 1) {
+      document.getElementById("customAlert").style.display = 'flex';
+    } else {
+      document.getElementById("die").style.display = 'flex';
+    }
+
+  }
   {
     star = restore(star, trace[frameCount].star);
     nameText.rotation.z = (-1) * star.cube.rotation.z;
@@ -1095,11 +1056,60 @@ function viewReplayEngine() {
   render();
 }
 
+function removeAll() {
+  while (scene.children.length > 0) {
+    const object = scene.children[0];
+    scene.remove(object);
+
+    if (object.geometry) object.geometry.dispose();
+    if (object.material) {
+      if (Array.isArray(object.material)) {
+        object.material.forEach((mat) => mat.dispose());
+      } else {
+        object.material.dispose();
+      }
+    }
+    if (object.texture) object.texture.dispose();
+  }
+
+  scene.remove(star.cube);
+
+  star.tail.forEach((item) => scene.remove(item.cube));
+  star.newtail.forEach(item => scene.remove(item.cube));
+
+  bots.forEach(bot => {
+    scene.remove(bot.cube);
+    bot.tail.forEach((item) => scene.remove(item.cube));
+  });
+  food.forEach(item => scene.remove(item.cube));
+
+  // replayBots.forEach(bot => scene.remove(bot.cube))
+
+  replayBots.forEach(bot => {
+    scene.remove(bot.cube);
+    bot.tail.forEach((item) => scene.remove(item.cube));
+  });
+  bots = [];
+  food = [];
+  replayBots = [];
+  const tbody = document.querySelector('#leaderboard tbody');
+  tbody.innerHTML = '';
+  const row = document.createElement('tr');
+  row.innerHTML =
+      `<tr class="highlight">
+            <td class="rank">1</td>
+            <td class="name player-name">You</td>
+            <td class="score">2</td>
+          </tr>`
+  tbody.appendChild(row);
+}
+
 //----------------------------------------start pro--------------------------------------------//
 
 window.onload = function() {
   drawController();
 };
+
 document.addEventListener('mouseup', () => {
   isDragging = false;
 });
@@ -1130,6 +1140,15 @@ document.addEventListener('mousemove', (event) => {
 
 document.getElementById("closeAlert").addEventListener("click", function() {
   document.getElementById("customAlert").style.display = 'none';
+  removeAll();
+  runningReplay = false;
+  gameOverCount = 0;
+  running = false;
+  initPro()
+  makeInitialFood();
+  animate();
+
+  gameForm.style.display = "block";
 });
 
 document.getElementById("viewReplay").addEventListener("click", function() {
@@ -1146,6 +1165,7 @@ document.getElementById("viewReplay").addEventListener("click", function() {
 
   food.forEach(item => scene.remove(item.cube));
   viewReplayEngine();
+
 });
 
 controllerCanvas.addEventListener('mousedown', (event) => {
@@ -1223,7 +1243,6 @@ webgl.addEventListener('mouseup', () => {
 
 gameForm.addEventListener("submit", function(event) {
   event.preventDefault(); // Prevent the default form submission
-
   // Get the player name from the input field
   playerName = document.getElementById("playerName").value;
 

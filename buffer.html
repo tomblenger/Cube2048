@@ -1,32 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Over</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Over</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-<div id="customGameOver" class="modal" style="display: none">
-  <div class="modal-content">
-    <div class="timer-container">
-      <svg class="progress-ring" width="100" height="100">
+    <div id="customGameOver" class="modal" style="display: none">
+        <div class="modal-content">
+            <div class="timer-container">
+                <svg class="progress-ring" width="100" height="100">
         <circle class="progress-ring__circle-bg" cx="50" cy="50" r="40"></circle>
         <circle class="progress-ring__circle" cx="50" cy="50" r="40"></circle>
       </svg>
-      <span class="timer-text" id="countdown">3</span>
-    </div>
+                <span class="timer-text" id="countdown">3</span>
+            </div>
 
-    <div class="button-container">
-      <button id="restart" class="golden-button">
+            <div class="button-container">
+                <button id="restart" class="golden-button">
         <span class="icon">🎬</span> REVIVE?
       </button>
-      <button id="continue" class="golden-button">NEXT</button>
+                <button id="continue" class="golden-button">NEXT</button>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>

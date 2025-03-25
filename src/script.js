@@ -1495,6 +1495,29 @@ gameForm.addEventListener("submit", function(event) {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();

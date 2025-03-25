@@ -29,9 +29,9 @@ const INITIAL = 1;
 
 const TIME_SPACE_BOT = 100;
 const TIME_SPACE_TABLE = 200;
-const MAX_BOT = 2;
-const MAX_INIT_FOOD = 3;
-const MAX_FOOD = 5;
+const MAX_BOT = 30;
+const MAX_INIT_FOOD = 20;
+const MAX_FOOD = 30;
 const TIME_SPACE_FOOD = 40;
 
 const SIZE = 0;

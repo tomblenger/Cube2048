@@ -349,11 +349,11 @@ class Cube {
     }
 
     playSound() {
-        let sound = new Audio("sound.wav"); // Create a new instance
-        // let distance = (star.pos[0] - this.pos[0]) ** 2 + (star.pos[1] - this.pos[1]) ** 2;
-
-        sound.volume = 0.5;
-        sound.play(); // Play a separate instance
+        // let sound = new Audio("./sound.wav"); // Create a new instance
+        // // let distance = (star.pos[0] - this.pos[0]) ** 2 + (star.pos[1] - this.pos[1]) ** 2;
+        //
+        // sound.volume = 0.5;
+        // sound.play(); // Play a separate instance
     }
 
 
@@ -500,7 +500,6 @@ class Cube {
         } else {
             let buf = this.bufPos[this.bufPos.length - 1];
             let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
-            console.log(distance);
             if(distance > 0.0004) {
                 this.edge = distance <= 0.0006;
                 this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
@@ -701,7 +700,6 @@ class Cube {
 
         this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
     }
-
 
     toDistance() {
         if (!this.food.length) return;
@@ -1148,13 +1146,11 @@ function animate() {
     if (isIncreasable) {
         frameBufferCount++;
         if (frameBufferCount < 300) {
-            console.log("BUFFERCOUNT", frameBufferCount)
             moveSpeedStar = {
                 ...moveSpeedStar,
                 x: 0.05,
                 y: 0.05
             }
-            console.log("NEW", moveSpeedStar)
         } else {
             isIncreasable = false;
             frameBufferCount = 600;
@@ -1340,7 +1336,6 @@ document.addEventListener('mousemove', (event) => {
 
             if (calRadius < outerRadius * outerRadius && touchSize.width) {
                 mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
-                console.log("mouse.x", mouse.x)
                 mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
                 mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
             }
@@ -1466,13 +1461,11 @@ webgl.addEventListener('mousedown', () => {
     if (frameBufferCount < 600 && frameBufferCount > 250) {
         isIncreasable = false;
     } else isIncreasable = true;
-    console.log("ISINCRESEABLE", isIncreasable)
 })
 
 webgl.addEventListener('mouseup', () => {
     controllable = false;
     isIncreasable = false;
-    console.log("ISINCRESEABLE", isIncreasable)
 
 });
 
@@ -1520,7 +1513,6 @@ gameForm.addEventListener("submit", function(event) {
         gameForm.style.display = "none";
         document.addEventListener("click", startGame, { once: true });
     } catch (err) {
-        console.log("Submit Catch Error", err)
     }
 });
 

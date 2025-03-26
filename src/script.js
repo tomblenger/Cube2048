@@ -772,16 +772,45 @@ class Cube {
             let traceHis;
 
             if (mouseCount === 0) {
-                if (this.edge) traceHis = this.size < 100 ? 16 : 17;
-                else traceHis = this.size < 100 ? 13 : 14;
+                if( j > 0) {
+                    switch (this.tail[j - 1].size) {
+                        case 2048: traceHis = 20; break;
+                        case 1024: traceHis = 19; break;
+                        case 512: traceHis = 19; break;
+                        case 256: traceHis = 18; break;
+                        case 128: traceHis = 18; break;
+                        case 64: traceHis = 17; break;
+                        case 32: traceHis = 16; break;
+                        case 16: traceHis = 15; break;
+                        case 8: traceHis = 14; break;
+                        case 2: case 4: traceHis = 13; break;
+                        default: traceHis = 21; break;
+                    }
+                    if (this.edge) traceHis += 2;
+                } else {
+                    switch (this.size) {
+                        case 2048: traceHis = 20; break;
+                        case 1024: traceHis = 19; break;
+                        case 512: traceHis = 19; break;
+                        case 256: traceHis = 18; break;
+                        case 128: traceHis = 18; break;
+                        case 64: traceHis = 17; break;
+                        case 32: traceHis = 16; break;
+                        case 16: traceHis = 15; break;
+                        case 8: traceHis = 14; break;
+                        case 2: case 4: traceHis = 13; break;
+                        default: traceHis = 21; break;
+                    }
+                    if (this.edge) traceHis += 2;
+                }
             }
+            if(j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
+            else item.arrIndex = this.bufAngle.length - traceHis;
 
-            let arrIndex = Math.max(0, this.bufAngle.length - (j + 1) * traceHis);
+            item.setAngle(this.bufAngle[item.arrIndex]);
 
-            item.setAngle(this.bufAngle[arrIndex]);
-
-            if (this.bufPos[arrIndex]) {
-                let [x, y, z] = this.bufPos[arrIndex];
+            if (this.bufPos[item.arrIndex]) {
+                let [x, y, z] = this.bufPos[item.arrIndex];
                 //
                 // let offsetX = item.sizeDef * (j + 1);
                 // let offsetY = item.sizeDef * (j + 1);

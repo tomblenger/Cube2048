@@ -237,7 +237,7 @@ class Cube {
         if (this.type === PERSON) {
             this.pos = [0, 0, 0];
         } else {
-            this.pos = [randomizePosition(maxScaledWidth), randomizePosition(maxScaledHeight), 0];
+            this.pos = [randomizePosition(maxScaledWidth), randomizePosition(maxScaledHeight), 1];
         }
     }
 
@@ -462,8 +462,18 @@ class Cube {
 
     setStarBuffer() {
         this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-        this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-        this.bufPos.push([...this.pos]);
+        if(this.bufPos.length < 15) {
+            this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+            this.bufPos.push([...this.pos]);
+        } else {
+            let buf = this.bufPos[this.bufPos.length - 1];
+            let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
+            console.log(distance);
+            if(distance > 0.0005) {
+                this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+                this.bufPos.push([...this.pos]);
+            }
+        }
     }
 
     setStarPosAngle() {
@@ -551,25 +561,25 @@ class Cube {
 
             if (this.bufPos[arrIndex]) {
                 let [x, y, z] = this.bufPos[arrIndex];
-
-                let offsetX = item.sizeDef * (j + 1);
-                let offsetY = item.sizeDef * (j + 1);
-
-                if (Math.abs(mouse.y) < 0.03) {
-                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
-                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
-                } else {
-                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
-                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
-                }
-
-                if (Math.abs(mouse.x) < 0.03) {
-                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
-                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
-                } else {
-                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
-                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
-                }
+                //
+                // let offsetX = item.sizeDef * (j + 1);
+                // let offsetY = item.sizeDef * (j + 1);
+                //
+                // if (Math.abs(mouse.y) < 0.03) {
+                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
+                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
+                // } else {
+                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
+                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
+                // }
+                //
+                // if (Math.abs(mouse.x) < 0.03) {
+                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
+                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
+                // } else {
+                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
+                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
+                // }
 
                 item.pos = [x, y, z];
                 item.setPos();

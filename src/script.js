@@ -209,6 +209,7 @@ class Cube {
         this.count = 0;
         this.direction = RAND;
         this.newtail = [];
+        this.mergeCount = 0;
 
         this.next = {
             x: 0,
@@ -493,8 +494,19 @@ class Cube {
 
     setStarBuffer() {
         this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-        this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-        this.bufPos.push([...this.pos]);
+        if(this.bufPos.length < 15) {
+            this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+            this.bufPos.push([...this.pos]);
+        } else {
+            let buf = this.bufPos[this.bufPos.length - 1];
+            let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
+            console.log(distance);
+            if(distance > 0.0004) {
+                this.edge = distance <= 0.0006;
+                this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+                this.bufPos.push([...this.pos]);
+            }
+        }
     }
 
     setStarPosAngle() {
@@ -526,21 +538,21 @@ class Cube {
     mergeTailEngine() {
         this.tail.sort((a, b) => b.size - a.size);
         let len = this.tail.length;
-        if (this.mergeCount > 20) {
-            while (i < len) {
-                const currentTail = this.tail[i];
-                const prevTail = this.tail[i - 1];
-
-                if (i === 0) {
+        let i = len - 1;
+        while (i >= 0) {
+            const currentTail = this.tail[i];
+            const prevTail = this.tail[i - 1];
+            if (i === 0) {
+                if(this.eatToHeadCount > EAT_COUNT) {
                     if (currentTail.size === this.size) {
                         scene.remove(currentTail.cube);
                         scene.remove(currentTail.text);
                         this.eatCount = 0;
                         this.updateSize();
-
                         this.tail = deleteFromArray(this.tail, i);
                         len--;
-                        this.mergeCount = 0;
+                        this.eatCount = 0;
+                        this.eatToHeadCount = 0;
                         return;
                     } else if (currentTail.size > this.size) {
                         scene.remove(currentTail.cube);
@@ -548,29 +560,28 @@ class Cube {
                         while (this.size < currentTail.size) {
                             this.updateSize();
                         }
-
-                        this.tail = deleteFromArray(this.tail, i);
-                        this.mergeCount = 0;
-                        return;
-                    }
-                } else if (currentTail.size === prevTail.size) {
-                    if (this.eatCount > 20) {
-                        scene.remove(currentTail.cube);
-                        scene.remove(currentTail.text);
-                        prevTail.updateSize();
                         this.tail = deleteFromArray(this.tail, i);
                         this.eatCount = 0;
-                        len--;
-                        this.mergeCount = 0;
+                        this.eatToHeadCount = 0;
                         return;
-                    } else {
-                        this.eatCount++;
                     }
+                    this.eatToHeadCount = 0;
+                } else this.eatToHeadCount ++;
+            } else if (currentTail.size === prevTail.size) {
+                if (this.eatCount > EAT_COUNT) {
+                    scene.remove(currentTail.cube);
+                    scene.remove(currentTail.text);
+                    prevTail.updateSize();
+                    this.tail = deleteFromArray(this.tail, i);
+                    this.eatCount = 0;
+                    this.eatToHeadCount = 0;
+                    len--;
+                    return;
+                } else {
+                    this.eatCount ++;
                 }
-                i++;
             }
-        } else {
-            this.mergeCount++;
+            i--;
         }
     }
 
@@ -580,32 +591,37 @@ class Cube {
 
         this.tail.forEach((item, j) => {
             let traceHis;
-            if (mouseCount === 0) traceHis = this.size < 100 ? 13 : 14;
+
+            if (mouseCount === 0) {
+                if(this.edge) traceHis = this.size < 100 ? 16 : 17;
+                else traceHis = this.size < 100 ? 13 : 14;
+            }
+
             let arrIndex = Math.max(0, this.bufAngle.length - (j + 1) * traceHis);
 
             item.setAngle(this.bufAngle[arrIndex]);
 
             if (this.bufPos[arrIndex]) {
                 let [x, y, z] = this.bufPos[arrIndex];
-
-                let offsetX = item.sizeDef * (j + 1);
-                let offsetY = item.sizeDef * (j + 1);
-
-                if (Math.abs(mouse.y) < 0.03) {
-                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
-                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
-                } else {
-                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
-                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
-                }
-
-                if (Math.abs(mouse.x) < 0.03) {
-                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
-                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
-                } else {
-                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
-                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
-                }
+                //
+                // let offsetX = item.sizeDef * (j + 1);
+                // let offsetY = item.sizeDef * (j + 1);
+                //
+                // if (Math.abs(mouse.y) < 0.03) {
+                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
+                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
+                // } else {
+                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
+                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
+                // }
+                //
+                // if (Math.abs(mouse.x) < 0.03) {
+                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
+                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
+                // } else {
+                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
+                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
+                // }
 
                 item.pos = [x, y, z];
                 item.setPos();

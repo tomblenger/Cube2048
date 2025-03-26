@@ -279,6 +279,7 @@ class Cube {
         this.text.fontWeight = 'bold'
         this.text.color = '#ffffff';
         this.text.geometry.center();
+        this.text.rotation.z = this.cube.rotation.z - Math.PI / 2
         this.cube.add(this.text);
         // this.cube.add(this.clockFace)
     }
@@ -302,11 +303,17 @@ class Cube {
         let textPosY = this.sizeDef / 2.8;
 
         if (this.size < 10) {
-            textPosX = -this.sizeDef / 5.8;
+            textPosX = this.sizeDef / 2.8;
+            textPosY = this.sizeDef / 6;
         } else if (this.size < 100) {
-            textPosX = -this.sizeDef / 3.3;
-        } else if (this.size >= 1000) {
-            textPosY = this.sizeDef / 1.8;
+            textPosX = this.sizeDef / 2.8;
+            textPosY = this.sizeDef / 3;
+        } else if (this.size <= 1000) {
+            textPosX = this.sizeDef / 2.8;
+            textPosY = this.sizeDef / 2.2;
+        } else {
+            textPosX = this.sizeDef / 2.8;
+            textPosY = this.sizeDef / 2
         }
 
         this.text.position.set(textPosX, textPosY, textPosZ);

@@ -35,7 +35,6 @@
 #inputWrapper {
     display: flex;
     align-items: center;
-    /* background: transparent; */
     padding: 5px;
     margin-left: 35%;
     border: solid #d6a743 4px;
@@ -181,6 +180,80 @@ input {
     color: #ff9900;
     margin-bottom: 10%;
     text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, -4px -4px 0 #0d9b00, 4px -4px 0 #0d9b00, -4px 4px 0 #0d9b00, 4px 4px 0 #0d9b00;
+}
+
+@media (max-width: 767px) {
+    #cubename {
+        font-size: 60px;
+    }
+    #startButton {
+        font-size: 20px;
+    }
+    #game-form {
+        font-size: 20px;
+    }
+    .play-icon {
+        font-size: 7px;
+    }
+    #userIcon img {
+        width: 20px;
+        height: 15px;
+    }
+    #inputWrapper {
+        padding: 2px;
+        margin-left: 15%;
+        border: solid #d6a743 4px;
+        border-radius: 15px;
+        width: 70%;
+        position: relative;
+    }
+    #playerName {
+        /* font-size: 10px;
+        color: white;
+        background: transparent; */
+        /* min-width: 100%; */
+        /* border-left: 2px solid #fdd67b;
+        padding: 13px 50px;
+        border-radius: 1px;
+        outline: none;
+        text-align: left;
+        width: 200px;
+        position: relative; */
+    }
+    #userIcon {
+        background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
+        padding: 10px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        margin-right: 10px;
+        box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .leaderboard-container {
+        top: 10px;
+        right: 5px;
+        width: 100px;
+    }
+    td {
+        padding: 0px;
+        font-size: 11px;
+        text-align: center;
+    }
+    .rank {
+        color: gray;
+        text-align: center;
+        min-width: 20px;
+    }
+    .name {
+        padding-left: 0px;
+        min-width: 30px;
+    }
+    .score {
+        text-align: right;
+        min-width: 20px;
+    }
 }
 
 

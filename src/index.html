@@ -53,18 +53,9 @@
         <button id="settingsButton" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-md hover:bg-gray-700">⚙️ Settings</button>
     </div>
 
-    <!-- Settings Form (New) -->
     <!-- Settings Form (Elegant) -->
     <div id="settingsForm" class="hidden absolute p-6 bg-white/40 backdrop-blur-lg rounded-2xl shadow-lg w-96 border border-white/20 transition-all duration-300" style="z-index: 15; top: 50%; left: 50%; transform: translate(-50%, -50%);">
         <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Game Settings</h3>
-
-        <!-- Distance (Slider) -->
-        <!-- <div class="mb-4">
-            <label for="distance" class="block text-gray-700 font-medium mb-2">Distance:</label>
-            <input type="range" id="distance" name="distance" min="0" max="1" step="0.01" value="0.1" class="w-full accent-blue-500">
-            <div class="text-sm text-gray-600 mt-2 text-center">Distance: <span id="distanceValue" class="font-semibold">0.1</span></div>
-        </div> -->
-
         <!-- Color Style -->
         <div class="mb-4">
             <label for="colorStyle" class="block text-gray-700 font-medium mb-2">Color Style:</label>
@@ -72,16 +63,6 @@
                 <option value="style1">Style1</option>
                 <option value="style2">Style2</option>
                 <option value="style3">Style3</option>
-            </select>
-        </div>
-
-        <!-- Speed -->
-        <div class="mb-4">
-            <label for="speed" class="block text-gray-700 font-medium mb-2">Speed:</label>
-            <select id="speed" class="w-full p-2 bg-white/60 border border-gray-300 rounded-lg shadow-sm text-gray-700 focus:ring-2 focus:ring-blue-400 transition-all">
-                <option value="slow">Slow</option>
-                <option value="medium">Medium</option>
-                <option value="fast">Fast</option>
             </select>
         </div>
 
@@ -97,11 +78,11 @@
 
         <div class="flex justify-between items-center mt-6">
             <button id="closeSettingsButton" class="bg-gray-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-600 transition-all">
-        Cancel
-    </button>
+                Cancel
+            </button>
             <button id="saveSettingsButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-all">
-        Save Settings
-    </button>
+                Save Settings
+            </button>
         </div>
     </div>
 

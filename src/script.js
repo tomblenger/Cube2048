@@ -12,13 +12,10 @@ const customAlert = document.getElementById("customAlert");
 const desktopMode = document.getElementById("com");
 const mobileMode = document.getElementById("phone");
 const cancelButton = document.getElementById('closeSettingsButton');
-// const distanceSlider = document.getElementById('distance');
-// const distanceValue = document.getElementById('distanceValue');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
 const ctx = controllerCanvas.getContext('2d');
 const style = document.getElementById('colorStyle');
-const speed = document.getElementById('speed');
 
 
 const PERSON = 0;
@@ -43,18 +40,17 @@ let nameText;
 let frameCount = 0;
 let runningReplay = true;
 let cubeName = "PPP";
-// let distance = 0;
 let colorStyle = 'style1';
-let speedType = 'slow';
 let difficulty = "easy";
 let threeAngle;
 let touch = false;
 let controllable = false;
+let isIncreasable = false;
 let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
 let openForm = false;
 let isDragging = false;
-let currentControllerPos = { x: 0, y: 0 };
+let currentControllerPos = { x: window.innerWidth - 97, y: window.innerHeight - 97 };
 let canvasPos = {
     width: 400,
     height: 400,
@@ -138,6 +134,7 @@ let eatTailBuf = null;
 let mouseCount = 0;
 let gameOverCount = 0;
 let controllerControl = false;
+let frameBufferCount = 0;
 
 var trace = [];
 
@@ -148,6 +145,22 @@ let touchSize = {
     width: 300,
     height: 250
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function getElementPositions(element) {
     const rect = element.getBoundingClientRect();
@@ -165,10 +178,10 @@ function getColor(size) {
             'style2': color2,
             'style3': color3
         };
-        return colorMap[colorStyle][buf]; // Use optional chaining & nullish coalescing
+        return colorMap[colorStyle][buf];
     } catch (err) {
         console.error("Get Color Error:", err);
-        return null; // Return a safe default value
+        return null;
     }
 }
 
@@ -220,6 +233,7 @@ class Cube {
         this.botRouteCount = 0;
         this.ref = 0;
         this.eatCount = 0;
+        // this.frameCount = frameBufferCount;
         this.bufPos = [];
         this.bufAngle = [];
 
@@ -227,6 +241,20 @@ class Cube {
         this.sizeDef = INITIAL * 0.1 + 0.3;
         this.size = size;
         this.type = type;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         this.geometry = new RoundedBoxGeometry(this.sizeDef, this.sizeDef, this.sizeDef, 3, 0.05);
         this.scale = 1;
@@ -237,7 +265,6 @@ class Cube {
         this.cube = new THREE.Mesh(this.geometry, this.material);
         this.cube.scale.set(this.scale, this.scale, this.scale);
 
-        //set parameters for the position randomize
         if (this.type === PERSON) {
             this.pos = [0, 0, 0];
         } else {
@@ -246,7 +273,6 @@ class Cube {
     }
 
     create(pos = undefined) {
-        //add cube to the scene and set position and draw text on the top of cubic
         if (this.eat === false) scene.add(this.cube);
         this.setPos(pos);
         this.createText();
@@ -254,7 +280,6 @@ class Cube {
     }
 
     updateSize() {
-        //update the cube size into two times
         this.size = this.size * 2;
 
         this.color = getColor(this.size);
@@ -279,34 +304,35 @@ class Cube {
     }
 
     createText() {
-        //create text and draw
+
+
+
         this.text.text = this.size < 1000 ? `${this.size}` : `${Math.floor(this.size / 1000)}K`;
         this.text.fontSize = this.size < 1000 ? 0.2 : 0.3;
         this.text.fontSize = 0.2;
         this.text.fontWeight = 'bold'
         this.text.color = '#ffffff';
         this.text.geometry.center();
-        this.cube.add(this.text)
+        this.cube.add(this.text);
+        // this.cube.add(this.clockFace)
     }
 
     setPos(pos = this.pos) {
-        // Update text based on size
         this.text.text = this.size < 1000 ? `${this.size}` : `${Math.floor(this.size / 1000)}K`;
         this.text.fontSize = this.size < 1000 ? 0.2 : 0.3;
         this.text.fontWeight = 'bold';
         this.text.color = '#ffffff';
 
-        // Set position boundaries
         pos = pos || this.pos;
         pos[0] = Math.min(Math.max(pos[0], -maxScaledWidth), maxScaledWidth);
         pos[1] = Math.min(Math.max(pos[1], -maxScaledHeight), maxScaledHeight);
 
-        // Update cube and text positions
         this.pos = pos;
         this.cube.position.set(pos[0], pos[1], 0.1);
+        // this.clockFace.position.set(pos[0], pos[1], 1);
 
         const textPosZ = this.sizeDef - 0.199;
-        let textPosX = -this.sizeDef / 2.2; // Default value for larger sizes
+        let textPosX = -this.sizeDef / 2.2;
         let textPosY = this.sizeDef / 2.8;
 
         if (this.size < 10) {
@@ -329,7 +355,7 @@ class Cube {
     }
 
     eatPlayerAround(player) {
-        if (this.size <= player.size) return; // Early return for clarity
+        if (this.size <= player.size) return;
 
         const minDist = this.sizeDef + 0.13;
         const deltaX = Math.abs(player.pos[0] - this.pos[0]);
@@ -441,10 +467,6 @@ class Cube {
                             let eatBuf;
                             let restBuf;
                             eatBuf = bot.tail.slice(i, bot.tail.length);
-                            // eatBuf.forEach(item => {
-                            //     item.type = FOOD
-                            //     food.push
-                            // });
 
                             restBuf = bot.tail.slice(0, i);
                             bot.tail = restBuf;
@@ -468,11 +490,8 @@ class Cube {
     }
 
     setStarBuffer() {
-        // If mouse is at (0,0), set reference to 1; otherwise calculate the reference value based on moveSpeedStar
         this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-        // Push the angle (in radians) of the vector from the origin to the mouse position into bufAngle
         this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-        // Push the current position of the object into bufPos
         this.bufPos.push([...this.pos]);
     }
 
@@ -503,7 +522,6 @@ class Cube {
     }
 
     mergeTailEngine() {
-        // Sort tail by size in descending order
         this.tail.sort((a, b) => b.size - a.size);
         let i = 0;
         let len = this.tail.length;
@@ -550,12 +568,12 @@ class Cube {
     }
 
     traceEngine() {
-        // Ensure buffer does not exceed 2000 entries
         if (this.bufAngle.length > 2000) this.bufAngle.splice(0, this.bufAngle.length - 2000);
         if (this.bufPos.length > 2000) this.bufPos.splice(0, this.bufPos.length - 2000);
 
         this.tail.forEach((item, j) => {
-            let traceHis = mouseCount === 0 ? (this.size < 100 ? 15 : 17) : (this.size < 100 ? 9 : 10);
+            let traceHis;
+            if (mouseCount === 0) traceHis = this.size < 100 ? 13 : 14;
             let arrIndex = Math.max(0, this.bufAngle.length - (j + 1) * traceHis);
 
             item.setAngle(this.bufAngle[arrIndex]);
@@ -563,7 +581,6 @@ class Cube {
             if (this.bufPos[arrIndex]) {
                 let [x, y, z] = this.bufPos[arrIndex];
 
-                // Adjust position based on boundaries
                 let offsetX = item.sizeDef * (j + 1);
                 let offsetY = item.sizeDef * (j + 1);
 
@@ -604,12 +621,11 @@ class Cube {
         };
 
         neighbors.forEach((neighbor, i) => {
-            if (botState === i) return; // Skip self
+            if (botState === i) return;
 
             const nx = neighbor.pos[0];
             const ny = neighbor.pos[1];
 
-            // Check if the neighbor is within the rectangle
             if (nx > rect.left && nx < rect.right && ny < rect.top && ny > rect.bottom) {
                 const dx = nx - this.pos[0];
                 const dy = ny - this.pos[1];
@@ -633,26 +649,26 @@ class Cube {
 
         if (this.enemies.length === 0) {
             if (this.food.length === 0) {
-                this.toRandom(); // No enemies, no food
+                this.toRandom();
                 this.direction = RAND;
             } else {
                 this.direction = prob5to5 ? DISTANCE : SIZE;
-                prob5to5 ? this.toDistance() : this.toSize(); // Chase food    
+                prob5to5 ? this.toDistance() : this.toSize();
             }
             return;
         }
 
         if (this.food.length === 0 || prob3to7) {
-            this.toAntiDistance(); // Avoid enemies
+            this.toAntiDistance();
             this.direction = ANTI_DISTANCE;
         } else {
             this.direction = prob5to5 ? DISTANCE : SIZE;
-            prob5to5 ? this.toDistance() : this.toSize(); // Chase food
+            prob5to5 ? this.toDistance() : this.toSize();
         }
     }
 
     toSize() {
-        if (!this.food.length) return; // Prevent errors if no food is available
+        if (!this.food.length) return;
 
         let def = this.food.reduce((max, item) => (item.size > max.size ? item : max), this.food[0]);
 
@@ -665,7 +681,7 @@ class Cube {
 
 
     toDistance() {
-        if (!this.food.length) return; // Prevent errors if no food is available
+        if (!this.food.length) return;
 
         let def = this.food.reduce((min, item) => (item.distance < min.distance ? item : min), this.food[0]);
 
@@ -677,14 +693,13 @@ class Cube {
     }
 
     toAntiDistance() {
-        if (!this.enemies.length) return; // Prevent errors if no enemies are present
+        if (!this.enemies.length) return;
 
         let def = this.enemies.reduce((min, item) => (item.distance < min.distance ? item : min), this.enemies[0]);
 
         this.next.x = def.x > 0 ? -1 : 1;
         this.next.y = def.x > 0 ? -def.theta : def.theta;
 
-        // Adjust behavior at screen edges
         if (this.pos[0] === maxScaledWidth) this.next.x = -Math.random();
         if (this.pos[0] === -maxScaledWidth) this.next.x = Math.random();
         if (this.pos[1] === maxScaledHeight) this.next.y = -Math.random();
@@ -709,7 +724,6 @@ class Cube {
             this.next.y = Math.random() * 0.1 - 0.05;
         }
 
-        // Normalize movement
         this.ref = moveSpeed.x / Math.sqrt(this.next.x ** 2 + this.next.y ** 2);
     }
 }
@@ -941,7 +955,6 @@ function initPro() {
     nameText.color = '#ffffff';
     nameText.text = `you`;
     nameText.geometry.center();
-    // nameText.renderorder = 1;
 
     // Create a triangle marker (🔺)
     threeAngle = new Text();
@@ -961,7 +974,7 @@ function initPro() {
     // Attach texts to star
     star.cube.add(nameText);
     star.cube.add(threeAngle);
-
+    makeInitialFood();
     // Hide tails and bots initially
     makeInitHideTail(star);
     makeInitHideBots();
@@ -1096,8 +1109,31 @@ function drawArrow(x, y, direction, arrowSize = 25) {
 function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
+    if (isIncreasable) {
+        frameBufferCount++;
+        if (frameBufferCount < 300) {
+            console.log("BUFFERCOUNT", frameBufferCount)
+            moveSpeedStar = {
+                ...moveSpeedStar,
+                x: 0.05,
+                y: 0.05
+            }
+            console.log("NEW", moveSpeedStar)
+        } else {
+            isIncreasable = false;
+            frameBufferCount = 600;
+        }
+    } else {
+        moveSpeedStar = moveSpeed
+        frameBufferCount--;
+        if (frameBufferCount < 0) { frameBufferCount = 0 }
+    }
+
 
     if (star) {
+
+
+
         star.setStarBuffer();
         star.setStarPosAngle();
         star.mergeTailEngine();
@@ -1122,7 +1158,6 @@ function animate() {
     if (star) {
         star.eatFoodAround();
         star.eatBotAround();
-        // star.tailEatAround();
         star.eatTailAround();
     }
 
@@ -1137,7 +1172,6 @@ function animate() {
     updateTable(star, bots);
     setHistory();
 }
-
 
 function mainEngine() {
     animate();
@@ -1156,7 +1190,7 @@ function viewReplayEngine() {
         } else {
             document.getElementById("die").style.display = 'flex';
         }
-        return; // Stop execution after gameOver UI
+        return;
     }
 
     // Restore the star position
@@ -1251,8 +1285,8 @@ document.addEventListener('mouseup', () => {
 });
 
 document.addEventListener('mousemove', (event) => {
-    if (!star) return; // Ensure star exists before accessing its properties
-    nameText.rotation.z = -star.cube.rotation.z; // Simplified negation
+    if (!star) return;
+    nameText.rotation.z = -star.cube.rotation.z;
 
     canvasPos = getElementPositions(webgl);
 
@@ -1390,24 +1424,23 @@ controllerCanvas.addEventListener('mouseup', () => {
     drawController();
 })
 
-webgl.addEventListener('click', () => {
-    if (touch) {
+// webgl.addEventListener('click', () => {
+//     if (touch) {
 
-    } else {
-        if (mouseCount === 0) {
-            moveSpeedStar.x = moveSpeed.x + 0.025;
-            moveSpeedStar.y = moveSpeed.y + 0.025;
-            mouseCount = 1;
-        } else {
-            moveSpeedStar.x = moveSpeedStar.x - 0.025;
-            moveSpeedStar.y = moveSpeedStar.y - 0.025;
-            mouseCount = 0;
-        }
-    }
-});
+//     } else {
+//     }
+// });
+webgl.addEventListener('mousedown', () => {
+    if (frameBufferCount < 600 && frameBufferCount > 250) {
+        isIncreasable = false;
+    } else isIncreasable = true;
+    console.log("ISINCRESEABLE", isIncreasable)
+})
 
 webgl.addEventListener('mouseup', () => {
     controllable = false;
+    isIncreasable = false;
+    console.log("ISINCRESEABLE", isIncreasable)
 
 });
 
@@ -1433,16 +1466,9 @@ saveSettingsButton.addEventListener('click', function() {
     // distance = distanceSlider.value; // get the updated distance value
     colorStyle = style.value;
     speedType = speed.value;
-    moveSpeed = (speedType === 'slow') ? { x: 0.035, y: 0.035 } :
-        (speedType === 'medium') ? { x: 0.045, y: 0.045 } : { x: 0.050, y: 0.050 };
-
-    moveSpeedStar = {...moveSpeed };
-
     difficulty = document.getElementById('difficulty').value;
     settingsForm.classList.remove('block');
     settingsForm.classList.add('hidden');
-    // Call makeInitialFood() if required
-    makeInitialFood();
 });
 
 cancelButton.addEventListener('click', () => {
@@ -1467,6 +1493,29 @@ gameForm.addEventListener("submit", function(event) {
         console.log("Submit Catch Error", err)
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');

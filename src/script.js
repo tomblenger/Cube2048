@@ -338,6 +338,7 @@ class Cube {
         sound.play(); // Play a separate instance
     }
 
+
     eatPlayerAround(player) {
         if (this.size <= player.size) return;
 

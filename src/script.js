@@ -146,22 +146,6 @@ let touchSize = {
     height: 250
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getElementPositions(element) {
     const rect = element.getBoundingClientRect();
     return {
@@ -241,21 +225,6 @@ class Cube {
         this.sizeDef = INITIAL * 0.1 + 0.3;
         this.size = size;
         this.type = type;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         this.geometry = new RoundedBoxGeometry(this.sizeDef, this.sizeDef, this.sizeDef, 3, 0.05);
         this.scale = 1;
         for (let i = 0; i < this.count; i++) this.scale *= 1.05;
@@ -304,9 +273,6 @@ class Cube {
     }
 
     createText() {
-
-
-
         this.text.text = this.size < 1000 ? `${this.size}` : `${Math.floor(this.size / 1000)}K`;
         this.text.fontSize = this.size < 1000 ? 0.2 : 0.3;
         this.text.fontSize = 0.2;
@@ -484,8 +450,6 @@ class Cube {
                     }
                 })
             }
-
-
         });
     }
 
@@ -850,8 +814,7 @@ function makeBot() {
             botText.geometry.center();
             botText.position.z = 0.3;
             botText.text = `Bot${botIndex}`; // Assign correct label
-            botText.rotation.z = -newBot.cube.rotation.z
-
+            botText.rotation.z = -newBot.cube.rotation.z;
 
             newBot.cube.add(botText); // Attach text to the newly created bot
             bots.push(newBot); // Store the new bot in the array
@@ -1132,9 +1095,6 @@ function animate() {
 
 
     if (star) {
-
-
-
         star.setStarBuffer();
         star.setStarPosAngle();
         star.mergeTailEngine();
@@ -1466,7 +1426,7 @@ saveSettingsButton.addEventListener('click', function() {
     // Get the current value of the settings
     // distance = distanceSlider.value; // get the updated distance value
     colorStyle = style.value;
-    speedType = speed.value;
+
     difficulty = document.getElementById('difficulty').value;
     settingsForm.classList.remove('block');
     settingsForm.classList.add('hidden');
@@ -1481,8 +1441,6 @@ gameForm.addEventListener("submit", function(event) {
     try {
         event.preventDefault(); // Prevent the default form submission
         cubeName = playerName.value;
-
-
         if (desktopMode.checked) {
             touch = false;
         } else if (mobileMode.checked) {
@@ -1494,29 +1452,6 @@ gameForm.addEventListener("submit", function(event) {
         console.log("Submit Catch Error", err)
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');

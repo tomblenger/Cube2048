@@ -209,13 +209,12 @@ class Cube {
         this.count = 0;
         this.direction = RAND;
         this.newtail = [];
-        this.mergeCount = 0;
 
         this.next = {
             x: 0,
             y: 0
         }
-        this.edge = false;
+
         this.botRouteCount = 0;
         this.ref = 0;
         this.eatCount = 0;
@@ -237,10 +236,28 @@ class Cube {
         this.cube = new THREE.Mesh(this.geometry, this.material);
         this.cube.scale.set(this.scale, this.scale, this.scale);
 
+        ////////////////////////////////////////// Clock
+
+        // Create Full Clock Background
+        this.clockGeometry = new THREE.CircleGeometry(this.sizeDef / 3, 64);
+        this.clockMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: true, transparent: true });
+        this.clock = new THREE.Mesh(this.clockGeometry, this.clockMaterial);
+
+        // Create Timer Sector (Dynamic)
+        this.timerMaterial = new THREE.MeshStandardMaterial({ color: 0x373952, roughness: false });
+        this.timerGeometry = new THREE.RingGeometry(0, this.sizeDef / 4, 64, 1, 0, 0); // Full circle initially
+        this.timerMesh = new THREE.Mesh(this.timerGeometry, this.timerMaterial);
+        this.timerMesh.rotation.z = Math.PI / 2;
+        this.clock.add(this.timerMesh);
+        this.timerMesh.position.z = 0.001
+
+
+        ////////////////////////////////////////////////
+
         if (this.type === PERSON) {
             this.pos = [0, 0, 0];
         } else {
-            this.pos = [randomizePosition(maxScaledWidth), randomizePosition(maxScaledHeight), 1];
+            this.pos = [randomizePosition(maxScaledWidth), randomizePosition(maxScaledHeight), 0];
         }
     }
 
@@ -316,7 +333,7 @@ class Cube {
             textPosY = this.sizeDef / 2.2;
         } else {
             textPosX = this.sizeDef / 2.8;
-            textPosY = this.sizeDef / 2
+            textPosY = this.sizeDef / 2.2
         }
 
         this.text.position.set(textPosX, textPosY, textPosZ);
@@ -476,19 +493,8 @@ class Cube {
 
     setStarBuffer() {
         this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-        if(this.bufPos.length < 15) {
-            this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-            this.bufPos.push([...this.pos]);
-        } else {
-            let buf = this.bufPos[this.bufPos.length - 1];
-            let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
-            console.log(distance);
-            if(distance > 0.0004) {
-                this.edge = distance <= 0.0006;
-                this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-                this.bufPos.push([...this.pos]);
-            }
-        }
+        this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+        this.bufPos.push([...this.pos]);
     }
 
     setStarPosAngle() {
@@ -520,21 +526,21 @@ class Cube {
     mergeTailEngine() {
         this.tail.sort((a, b) => b.size - a.size);
         let len = this.tail.length;
-        let i = len - 1;
-        while (i >= 0) {
-            const currentTail = this.tail[i];
-            const prevTail = this.tail[i - 1];
-            if (i === 0) {
-                if(this.eatToHeadCount > EAT_COUNT) {
+        if (this.mergeCount > 20) {
+            while (i < len) {
+                const currentTail = this.tail[i];
+                const prevTail = this.tail[i - 1];
+
+                if (i === 0) {
                     if (currentTail.size === this.size) {
                         scene.remove(currentTail.cube);
                         scene.remove(currentTail.text);
                         this.eatCount = 0;
                         this.updateSize();
+
                         this.tail = deleteFromArray(this.tail, i);
                         len--;
-                        this.eatCount = 0;
-                        this.eatToHeadCount = 0;
+                        this.mergeCount = 0;
                         return;
                     } else if (currentTail.size > this.size) {
                         scene.remove(currentTail.cube);
@@ -542,28 +548,29 @@ class Cube {
                         while (this.size < currentTail.size) {
                             this.updateSize();
                         }
+
                         this.tail = deleteFromArray(this.tail, i);
-                        this.eatCount = 0;
-                        this.eatToHeadCount = 0;
+                        this.mergeCount = 0;
                         return;
                     }
-                    this.eatToHeadCount = 0;
-                } else this.eatToHeadCount ++;
-            } else if (currentTail.size === prevTail.size) {
-                if (this.eatCount > EAT_COUNT) {
-                    scene.remove(currentTail.cube);
-                    scene.remove(currentTail.text);
-                    prevTail.updateSize();
-                    this.tail = deleteFromArray(this.tail, i);
-                    this.eatCount = 0;
-                    this.eatToHeadCount = 0;
-                    len--;
-                    return;
-                } else {
-                    this.eatCount ++;
+                } else if (currentTail.size === prevTail.size) {
+                    if (this.eatCount > 20) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text);
+                        prevTail.updateSize();
+                        this.tail = deleteFromArray(this.tail, i);
+                        this.eatCount = 0;
+                        len--;
+                        this.mergeCount = 0;
+                        return;
+                    } else {
+                        this.eatCount++;
+                    }
                 }
+                i++;
             }
-            i--;
+        } else {
+            this.mergeCount++;
         }
     }
 
@@ -573,37 +580,32 @@ class Cube {
 
         this.tail.forEach((item, j) => {
             let traceHis;
-            
-            if (mouseCount === 0) {
-                if(this.edge) traceHis = this.size < 100 ? 16 : 17;
-                else traceHis = this.size < 100 ? 13 : 14;
-            }
-            
+            if (mouseCount === 0) traceHis = this.size < 100 ? 13 : 14;
             let arrIndex = Math.max(0, this.bufAngle.length - (j + 1) * traceHis);
 
             item.setAngle(this.bufAngle[arrIndex]);
 
             if (this.bufPos[arrIndex]) {
                 let [x, y, z] = this.bufPos[arrIndex];
-                //
-                // let offsetX = item.sizeDef * (j + 1);
-                // let offsetY = item.sizeDef * (j + 1);
-                //
-                // if (Math.abs(mouse.y) < 0.03) {
-                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
-                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
-                // } else {
-                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
-                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
-                // }
-                //
-                // if (Math.abs(mouse.x) < 0.03) {
-                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
-                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
-                // } else {
-                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
-                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
-                // }
+
+                let offsetX = item.sizeDef * (j + 1);
+                let offsetY = item.sizeDef * (j + 1);
+
+                if (Math.abs(mouse.y) < 0.03) {
+                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
+                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
+                } else {
+                    if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
+                    else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
+                }
+
+                if (Math.abs(mouse.x) < 0.03) {
+                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
+                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
+                } else {
+                    if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
+                    else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
+                }
 
                 item.pos = [x, y, z];
                 item.setPos();
@@ -730,6 +732,19 @@ class Cube {
         }
 
         this.ref = moveSpeed.x / Math.sqrt(this.next.x ** 2 + this.next.y ** 2);
+    }
+
+    drawTimer() {
+        let angle;
+        angle = (1 - frameBufferCount / 300) * Math.PI * 2
+        this.clock.position.set(this.pos[0], this.pos[1], 1);
+        this.clock.rotation.x = Math.PI / 4
+        scene.add(this.clock);
+        this.timerGeometry.dispose();
+        this.timerGeometry.copy(new THREE.RingGeometry(0, this.sizeDef / 4, 64, 1, 0, angle)); // Adjust sector
+    }
+    removeTimer() {
+        scene.remove(this.clock);
     }
 }
 
@@ -1140,6 +1155,11 @@ function animate() {
         star.setStarPosAngle();
         star.mergeTailEngine();
         star.traceEngine();
+        if (isIncreasable) {
+            star.drawTimer();
+        } else {
+            star.removeTimer();
+        }
 
         nameText.text = cubeName;
         cameraCtrl();
@@ -1426,12 +1446,6 @@ controllerCanvas.addEventListener('mouseup', () => {
     drawController();
 })
 
-// webgl.addEventListener('click', () => {
-//     if (touch) {
-
-//     } else {
-//     }
-// });
 webgl.addEventListener('mousedown', () => {
     if (frameBufferCount < 600 && frameBufferCount > 250) {
         isIncreasable = false;
@@ -1503,3 +1517,23 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for
 
 initPro();
 mainEngine();
+
+
+
+
+// // Timer Countdown Logic
+// let duration = 10; // 10 seconds
+// let startTime = Date.now();
+
+// function updateTimer() {
+//     let elapsed = (Date.now() - startTime) / 1000;
+//     let progress = elapsed / duration;
+
+//     if (progress > 1) progress = 1; // Stop at 100%
+
+//     let angle = Math.PI * 2 * (1 - progress); // Shrinking sector
+//     timerGeometry.dispose();
+//     timerGeometry.copy(new THREE.RingGeometry(0, 2.5, 64, 1, 0, angle)); // Adjust sector
+
+//     clockHand.rotation.z = -angle; // Move hand with timer
+// }

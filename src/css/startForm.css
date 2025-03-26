@@ -5,10 +5,10 @@
 #playerName {
     font-family: 'Luckiest Guy', cursive;
     font-size: 18px;
-    color: white;
+    /* color: white; */
     background: transparent;
     min-width: 85%;
-    border-left: 4px solid #fdd67b;
+    /* border-left: 4px solid #fdd67b; */
     padding: 13px 50px;
     border-radius: 2px;
     outline: none;
@@ -17,16 +17,37 @@
     position: relative;
 }
 
+#playerName::content {
+    background-color: transparent;
+    background: transparent;
+}
+
+#playerName:focus {
+    background-color: transparent;
+    background: transparent;
+}
+
 
 /* Placeholder Text */
 
 #playerName::placeholder {
     color: white;
+    background-color: transparent;
     opacity: 1;
-    font-size: 30px;
+    font-size: 20px;
     font-family: arial;
-    text-align: center;
+    text-align: left;
     padding-bottom: 50px;
+}
+
+#playerName:-webkit-autofill,
+#playerName:-webkit-autofill:hover,
+#playerName:-webkit-autofill:focus,
+#playerName:-webkit-autofill:active {
+    background: transparent !important;
+    color: white !important;
+    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 
@@ -47,14 +68,15 @@
 /* User Icon */
 
 #userIcon {
+    width: 100px;
     background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
     padding: 10px;
-    border-radius: 50%;
+    /* border-radius: 50%; */
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 5px;
-    margin-right: 15px;
+    /* margin-left: 0px;*/
+    margin-right: 5px;
     box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
@@ -62,8 +84,8 @@
 /* User Icon Image */
 
 #userIcon img {
-    width: 20px;
-    height: 20px;
+    width: 40px;
+    height: 40px;
 }
 
 #startButton {

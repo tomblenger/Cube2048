@@ -32,9 +32,9 @@ const INITIAL = 1;
 
 const TIME_SPACE_BOT = 100;
 const TIME_SPACE_TABLE = 200;
-const MAX_BOT = 30;
-const MAX_INIT_FOOD = 20;
-const MAX_FOOD = 30;
+const MAX_BOT = 20;
+const MAX_INIT_FOOD = 30;
+const MAX_FOOD = 40;
 const TIME_SPACE_FOOD = 40;
 const EAT_COUNT = 35;
 
@@ -219,6 +219,70 @@ function restartSound() {
     playSound(); // This will restart the sound
 }
 
+function isPointInRectangle(px, py, rect) {
+    function crossProduct(ax, ay, bx, by) {
+        return ax * by - ay * bx;
+    }
+
+    function isSameSide(p1x, p1y, p2x, p2y, ax, ay, bx, by) {
+        let cp1 = crossProduct(bx - ax, by - ay, p1x - ax, p1y - ay);
+        let cp2 = crossProduct(bx - ax, by - ay, p2x - ax, p2y - ay);
+        return cp1 * cp2 >= 0;
+    }
+
+    let [x0, y0, x1, y1, x2, y2, x3, y3] = rect;
+
+    return (
+      isSameSide(px, py, x2, y2, x0, y0, x1, y1) &&
+      isSameSide(px, py, x3, y3, x1, y1, x2, y2) &&
+      isSameSide(px, py, x0, y0, x2, y2, x3, y3) &&
+      isSameSide(px, py, x1, y1, x3, y3, x0, y0)
+    );
+}
+
+function isLineIntersecting(ax, ay, bx, by, cx, cy, dx, dy) {
+    function orientation(px, py, qx, qy, rx, ry) {
+        let val = (qy - py) * (rx - qx) - (qx - px) * (ry - qy);
+        return val > 0 ? 1 : val < 0 ? -1 : 0;
+    }
+
+    function onSegment(px, py, qx, qy, rx, ry) {
+        return Math.min(px, qx) <= rx && rx <= Math.max(px, qx) &&
+          Math.min(py, qy) <= ry && ry <= Math.max(py, qy);
+    }
+
+    let o1 = orientation(ax, ay, bx, by, cx, cy);
+    let o2 = orientation(ax, ay, bx, by, dx, dy);
+    let o3 = orientation(cx, cy, dx, dy, ax, ay);
+    let o4 = orientation(cx, cy, dx, dy, bx, by);
+
+    if (o1 !== o2 && o3 !== o4) return true; // General case
+
+    if (o1 === 0 && onSegment(ax, ay, bx, by, cx, cy)) return true;
+    if (o2 === 0 && onSegment(ax, ay, bx, by, dx, dy)) return true;
+    if (o3 === 0 && onSegment(cx, cy, dx, dy, ax, ay)) return true;
+    if (o4 === 0 && onSegment(cx, cy, dx, dy, bx, by)) return true;
+
+    return false;
+}
+
+function isLineRectangleOverlapping(line, rect) {
+    let [x0, y0, x1, y1, x2, y2, x3, y3] = rect;
+    let [px1, py1] = line[0], [px2, py2] = line[1];
+
+    // Case 1: Either endpoint is inside the rectangle
+    if (isPointInRectangle(px1, py1, rect) || isPointInRectangle(px2, py2, rect)) {
+        return true;
+    }
+
+    // Case 2: Line intersects any rectangle edge
+    let edges = [
+        [x0, y0, x1, y1], [x1, y1, x2, y2],
+        [x2, y2, x3, y3], [x3, y3, x0, y0]
+    ];
+
+    return edges.some(edge => isLineIntersecting(px1, py1, px2, py2, ...edge));
+}
 
 function getElementPositions(element) {
     const rect = element.getBoundingClientRect();
@@ -247,9 +311,9 @@ function randomizePosition(max) {
     return (Math.random() * 2 - 1) * max;
 }
 
-
 function deleteFromArray(arr, index) {
     let halfBefore, halfAfter;
+    scene.remove(arr[index].cube.cube)
     halfBefore = arr.slice(0, index);
     if ((index + 1) < arr.length) halfAfter = arr.slice(index + 1, arr.length);
     else halfAfter = [];
@@ -328,6 +392,7 @@ class Cube {
         } else {
             this.pos = [randomizePosition(maxScaledWidth), randomizePosition(maxScaledHeight), 0];
         }
+        this.setCornerPosition();
     }
 
     create(pos = undefined) {
@@ -410,13 +475,23 @@ class Cube {
 
     setAngle(angle) {
         this.cube.rotation.z = angle;
+        // if(this.type === PERSON) console.log(this.cube.rotation.z);
+    }
+
+    setCornerPosition() {
+        this.p_snake = this.sizeDef * 0.7071 * Math.sin(Math.PI / 4 + this.cube.rotation.z);
+        this.q_snake = this.sizeDef * 0.7071 * Math.cos(Math.PI / 4 + this.cube.rotation.z);
+        this.corner = [
+            this.pos[0] + this.q_snake, this.pos[1] + this.p_snake,
+            this.pos[0] - this.p_snake, this.pos[1] + this.q_snake,
+            this.pos[0] - this.q_snake, this.pos[1] - this.p_snake,
+            this.pos[0] + this.p_snake, this.pos[1] - this.q_snake
+        ];
     }
 
     connectTail(children) {
         this.tail.push(children);
     }
-
-    playSound() {}
 
     eatPlayerAround(player) {
         if (this.size <= player.size) return;
@@ -435,18 +510,33 @@ class Cube {
     }
 
     eatFoodAround() {
-
+        let deltaX = 0 , deltaY = 0;
+        let alpha = 0;
+        let bCrash = false;
+        let bOverlap = false;
         food.forEach((monster, i) => {
             if (bufFood.length !== 0) {
                 food = deleteIndexesFromArray(food, bufFood);
                 bufFood = [];
             }
             const minDist = monster.sizeDef;
-            let deltaY = monster.pos[1] - this.pos[1];
+            bCrash = false;
+            bOverlap = false;
+            deltaY = monster.pos[1] - this.pos[1];
             if (deltaY < 0) deltaY = -deltaY;
-            let deltaX = monster.pos[0] - this.pos[0];
+            deltaX = monster.pos[0] - this.pos[0];
             if (deltaX < 0) deltaX = -deltaX;
-            if (deltaX < minDist && deltaY < minDist) {
+            if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+
+                for (let j = 0; j < 4; j ++) {
+                    if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], this.corner)) bCrash = true;
+                    if (isPointInRectangle(this.corner[j * 2], this.corner[j * 2 + 1], monster.corner)) bCrash = true;
+                }
+                if( isLineRectangleOverlapping([[this.corner[6], this.corner[7]], [this.corner[0], this.corner[1]]], monster.corner)) {
+                    bOverlap = true;
+                }
+            }
+            if(bCrash) {
                 if (monster.size <= this.size) {
                     monster.eat = true;
                     playAudio(this.type);
@@ -463,17 +553,27 @@ class Cube {
                     let index = bufFood.findIndex(item => item === i);
                     if (index === -1) bufFood.push(i);
                 } else {
-                    if (mouse.x > 0) monster.pos[0] = this.pos[0] + (deltaX + 0.15);
-                    else monster.pos[0] = this.pos[0] - (deltaX + 0.15);
-                    if (mouse.y > 0) monster.pos[1] = this.pos[1] + (deltaY + 0.15);
-                    else monster.pos[1] = this.pos[1] - (deltaY + 0.15);
-                    monster.setPos();
+                    if (bOverlap)
+                    {
+                        let bufCenterAngle = Math.atan2((monster.pos[1] - this.pos[1]), (monster.pos[0] - this.pos[0])) - this.cube.rotation.z;
+                        if (bufCenterAngle > 0) monster.cube.rotation.z -= Math.PI / 2000;
+                        else if (bufCenterAngle < 0) monster.cube.rotation.z += Math.PI / 2000;
+                        monster.pos[0] = monster.pos[0] + Math.cos(this.cube.rotation.z) * moveSpeedStar.x;
+                        monster.pos[1] = monster.pos[1] + Math.sin(this.cube.rotation.z) * moveSpeedStar.x;
+                        monster.setPos();
+                        monster.setAngle(monster.cube.rotation.z);
+                        monster.setCornerPosition();
+                    }
                 }
             }
         });
     }
 
     eatBotAround() {
+        let deltaX = 0 , deltaY = 0;
+        let alpha = 0;
+        let bCrash = false;
+        let bOverlap = false;
 
         bots.forEach((monster, i) => {
             if (bufBots.length !== 0) {
@@ -482,11 +582,23 @@ class Cube {
             }
             if (i !== botState) {
                 const minDist = monster.sizeDef;
-                let deltaY = monster.pos[1] - this.pos[1];
+                bCrash = false;
+                bOverlap = false;
+                deltaY = monster.pos[1] - this.pos[1];
                 if (deltaY < 0) deltaY = -deltaY;
-                let deltaX = monster.pos[0] - this.pos[0];
+                deltaX = monster.pos[0] - this.pos[0];
                 if (deltaX < 0) deltaX = -deltaX;
-                if ((deltaX < minDist) && deltaY < minDist) {
+                if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+
+                    for (let j = 0; j < 4; j ++) {
+                        if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], this.corner)) bCrash = true;
+                        if (isPointInRectangle(this.corner[j * 2], this.corner[j * 2 + 1], monster.corner)) bCrash = true;
+                    }
+                    if( isLineRectangleOverlapping([[this.corner[6], this.corner[7]], [this.corner[0], this.corner[1]]], monster.corner)) {
+                        bOverlap = true;
+                    }
+                }
+                if(bCrash) {
                     if (monster.size < this.size) {
                         playAudio(this.type);
                         scene.remove(monster.cube);
@@ -504,11 +616,17 @@ class Cube {
                         let index = bufBots.findIndex(bufBot => bufBot === i);
                         if (index === -1) bufBots.push(i);
                     } else {
-                        if (mouse.x > 0) monster.pos[0] = this.pos[0] + (deltaX + 0.15);
-                        else monster.pos[0] = this.pos[0] - (deltaX + 0.15);
-                        if (mouse.y > 0) monster.pos[1] = this.pos[1] + (deltaY + 0.15);
-                        else monster.pos[1] = this.pos[1] - (deltaY + 0.15);
-                        monster.setPos();
+                        if (bOverlap)
+                        {
+                            let bufCenterAngle = Math.atan2((monster.pos[1] - this.pos[1]), (monster.pos[0] - this.pos[0])) - this.cube.rotation.z;
+                            if (bufCenterAngle > 0) monster.cube.rotation.z -= Math.PI / 2000;
+                            else if (bufCenterAngle < 0) monster.cube.rotation.z += Math.PI / 2000;
+                            monster.pos[0] = monster.pos[0] + Math.cos(this.cube.rotation.z) * moveSpeedStar.x;
+                            monster.pos[1] = monster.pos[1] + Math.sin(this.cube.rotation.z) * moveSpeedStar.x;
+                            monster.setPos();
+                            monster.setAngle(monster.cube.rotation.z);
+                            monster.setCornerPosition();
+                        }
                     }
                 }
             }
@@ -573,6 +691,7 @@ class Cube {
         this.pos[0] += this.ref * mouse.x;
         this.pos[1] += this.ref * mouse.y;
         this.setPos();
+        this.setCornerPosition();
     }
 
     setBotBuffer() {
@@ -592,6 +711,7 @@ class Cube {
         this.pos[0] += this.ref * this.next.x;
         this.pos[1] += this.ref * this.next.y;
         this.setPos();
+        this.setCornerPosition();
     }
 
     mergeTailEngine() {
@@ -685,6 +805,7 @@ class Cube {
                 item.pos = [x, y, z];
                 item.setPos();
             }
+            item.setCornerPosition();
         });
     }
 

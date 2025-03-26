@@ -30,6 +30,7 @@ const MAX_BOT = 30;
 const MAX_INIT_FOOD = 20;
 const MAX_FOOD = 30;
 const TIME_SPACE_FOOD = 40;
+const EAT_COUNT = 35;
 
 const SIZE = 0;
 const DISTANCE = 1;
@@ -218,6 +219,7 @@ class Cube {
         this.botRouteCount = 0;
         this.ref = 0;
         this.eatCount = 0;
+        this.eatToHeadCount = 0;
         // this.frameCount = frameBufferCount;
         this.bufPos = [];
         this.bufAngle = [];
@@ -325,7 +327,6 @@ class Cube {
     }
 
     connectTail(children) {
-        this.mergeCount = 0;
         this.tail.push(children);
     }
 
@@ -507,23 +508,22 @@ class Cube {
 
     mergeTailEngine() {
         this.tail.sort((a, b) => b.size - a.size);
-        let i = 0;
         let len = this.tail.length;
-        if(this.mergeCount > 20) {
-            while (i < len) {
-                const currentTail = this.tail[i];
-                const prevTail = this.tail[i - 1];
-
-                if (i === 0) {
+        let i = len - 1;
+        while (i >= 0) {
+            const currentTail = this.tail[i];
+            const prevTail = this.tail[i - 1];
+            if (i === 0) {
+                if(this.eatToHeadCount > EAT_COUNT) {
                     if (currentTail.size === this.size) {
                         scene.remove(currentTail.cube);
                         scene.remove(currentTail.text);
                         this.eatCount = 0;
                         this.updateSize();
-
                         this.tail = deleteFromArray(this.tail, i);
                         len--;
-                        this.mergeCount = 0;
+                        this.eatCount = 0;
+                        this.eatToHeadCount = 0;
                         return;
                     } else if (currentTail.size > this.size) {
                         scene.remove(currentTail.cube);
@@ -531,29 +531,28 @@ class Cube {
                         while (this.size < currentTail.size) {
                             this.updateSize();
                         }
-
-                        this.tail = deleteFromArray(this.tail, i);
-                        this.mergeCount = 0;
-                        return;
-                    }
-                } else if (currentTail.size === prevTail.size) {
-                    if (this.eatCount > 20) {
-                        scene.remove(currentTail.cube);
-                        scene.remove(currentTail.text);
-                        prevTail.updateSize();
                         this.tail = deleteFromArray(this.tail, i);
                         this.eatCount = 0;
-                        len--;
-                        this.mergeCount = 0;
+                        this.eatToHeadCount = 0;
                         return;
-                    } else {
-                        this.eatCount++;
                     }
+                    this.eatToHeadCount = 0;
+                } else this.eatToHeadCount ++;
+            } else if (currentTail.size === prevTail.size) {
+                if (this.eatCount > EAT_COUNT) {
+                    scene.remove(currentTail.cube);
+                    scene.remove(currentTail.text);
+                    prevTail.updateSize();
+                    this.tail = deleteFromArray(this.tail, i);
+                    this.eatCount = 0;
+                    this.eatToHeadCount = 0;
+                    len--;
+                    return;
+                } else {
+                    this.eatCount ++;
                 }
-                i++;
             }
-        } else {
-            this.mergeCount ++;
+            i--;
         }
     }
 

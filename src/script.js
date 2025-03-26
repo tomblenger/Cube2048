@@ -865,6 +865,7 @@ function makeBot() {
     }
 }
 
+
 function lightControl() {
     const lightPositions = [
         [0, 300, 200],

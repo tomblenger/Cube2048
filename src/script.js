@@ -347,6 +347,14 @@ class Cube {
         this.tail.push(children);
     }
 
+    playSound() {
+        let sound = new Audio("sound.wav"); // Create a new instance
+        // let distance = (star.pos[0] - this.pos[0]) ** 2 + (star.pos[1] - this.pos[1]) ** 2;
+
+        sound.volume = 0.5;
+        sound.play(); // Play a separate instance
+    }
+
     eatPlayerAround(player) {
         if (this.size <= player.size) return;
 
@@ -360,6 +368,7 @@ class Cube {
             document.getElementById("countNum").innerHTML = `${this.size}`;
             running = false;
             runningReplay = true;
+            this.playSound();
         }
     }
 
@@ -376,6 +385,7 @@ class Cube {
             let deltaX = monster.pos[0] - this.pos[0];
             if (deltaX < 0) deltaX = -deltaX;
             if (deltaX < minDist && deltaY < minDist) {
+                this.playSound();
                 if (monster.size <= this.size) {
                     monster.eat = true;
                     scene.remove(monster.cube);
@@ -398,7 +408,6 @@ class Cube {
                     monster.setPos();
                 }
             }
-
         });
     }
 
@@ -417,6 +426,7 @@ class Cube {
                 if (deltaX < 0) deltaX = -deltaX;
                 if ((deltaX < minDist) && deltaY < minDist) {
                     if (monster.size < this.size) {
+                        this.playSound();
                         scene.remove(monster.cube);
                         scene.remove(monster.text);
                         tailBuf = new Cube(TAIL, INITIAL);
@@ -456,7 +466,7 @@ class Cube {
                     if (deltaX < 0) deltaX = -deltaX;
                     if ((deltaX < minDist) && deltaY < minDist) {
                         if (item.size < this.size) {
-
+                            this.playSound();
                             let eatBuf;
                             let restBuf;
                             eatBuf = bot.tail.slice(i, bot.tail.length);

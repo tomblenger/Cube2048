@@ -770,7 +770,6 @@ class Cube {
 
         this.tail.forEach((item, j) => {
             let traceHis;
-
             if (mouseCount === 0) {
                 if( j > 0) {
                     switch (this.tail[j - 1].size) {
@@ -803,6 +802,8 @@ class Cube {
                     }
                     if (this.edge) traceHis += 2;
                 }
+
+                if(moveSpeedStar.x > moveSpeed.x) traceHis -= 3;
             }
             if(j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
             else item.arrIndex = this.bufAngle.length - traceHis;

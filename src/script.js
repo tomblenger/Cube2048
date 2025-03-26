@@ -208,12 +208,13 @@ class Cube {
         this.count = 0;
         this.direction = RAND;
         this.newtail = [];
+        this.mergeCount = 0;
 
         this.next = {
             x: 0,
             y: 0
         }
-
+        this.edge = false;
         this.botRouteCount = 0;
         this.ref = 0;
         this.eatCount = 0;
@@ -324,6 +325,7 @@ class Cube {
     }
 
     connectTail(children) {
+        this.mergeCount = 0;
         this.tail.push(children);
     }
 
@@ -469,7 +471,8 @@ class Cube {
             let buf = this.bufPos[this.bufPos.length - 1];
             let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
             console.log(distance);
-            if(distance > 0.0005) {
+            if(distance > 0.0004) {
+                this.edge = distance <= 0.0006;
                 this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
                 this.bufPos.push([...this.pos]);
             }
@@ -506,45 +509,51 @@ class Cube {
         this.tail.sort((a, b) => b.size - a.size);
         let i = 0;
         let len = this.tail.length;
+        if(this.mergeCount > 20) {
+            while (i < len) {
+                const currentTail = this.tail[i];
+                const prevTail = this.tail[i - 1];
 
-        while (i < len) {
-            const currentTail = this.tail[i];
-            const prevTail = this.tail[i - 1];
-
-            if (i === 0) {
-                if (currentTail.size === this.size) {
-                    scene.remove(currentTail.cube);
-                    scene.remove(currentTail.text);
-                    this.eatCount = 0;
-                    this.updateSize();
-
-                    this.tail = deleteFromArray(this.tail, i);
-                    len--;
-                    return;
-                } else if (currentTail.size > this.size) {
-                    scene.remove(currentTail.cube);
-                    scene.remove(currentTail.text)
-                    while (this.size < currentTail.size) {
+                if (i === 0) {
+                    if (currentTail.size === this.size) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text);
+                        this.eatCount = 0;
                         this.updateSize();
-                    }
 
-                    this.tail = deleteFromArray(this.tail, i);
-                    return;
+                        this.tail = deleteFromArray(this.tail, i);
+                        len--;
+                        this.mergeCount = 0;
+                        return;
+                    } else if (currentTail.size > this.size) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text)
+                        while (this.size < currentTail.size) {
+                            this.updateSize();
+                        }
+
+                        this.tail = deleteFromArray(this.tail, i);
+                        this.mergeCount = 0;
+                        return;
+                    }
+                } else if (currentTail.size === prevTail.size) {
+                    if (this.eatCount > 20) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text);
+                        prevTail.updateSize();
+                        this.tail = deleteFromArray(this.tail, i);
+                        this.eatCount = 0;
+                        len--;
+                        this.mergeCount = 0;
+                        return;
+                    } else {
+                        this.eatCount++;
+                    }
                 }
-            } else if (currentTail.size === prevTail.size) {
-                if (this.eatCount > 20) {
-                    scene.remove(currentTail.cube);
-                    scene.remove(currentTail.text);
-                    prevTail.updateSize();
-                    this.tail = deleteFromArray(this.tail, i);
-                    this.eatCount = 0;
-                    len--;
-                    return;
-                } else {
-                    this.eatCount++;
-                }
+                i++;
             }
-            i++;
+        } else {
+            this.mergeCount ++;
         }
     }
 
@@ -554,7 +563,12 @@ class Cube {
 
         this.tail.forEach((item, j) => {
             let traceHis;
-            if (mouseCount === 0) traceHis = this.size < 100 ? 13 : 14;
+            
+            if (mouseCount === 0) {
+                if(this.edge) traceHis = this.size < 100 ? 16 : 17;
+                else traceHis = this.size < 100 ? 13 : 14;
+            }
+            
             let arrIndex = Math.max(0, this.bufAngle.length - (j + 1) * traceHis);
 
             item.setAngle(this.bufAngle[arrIndex]);

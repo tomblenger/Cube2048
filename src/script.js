@@ -349,11 +349,6 @@ class Cube {
     }
 
     playSound() {
-        // let sound = new Audio("./sound.wav"); // Create a new instance
-        // // let distance = (star.pos[0] - this.pos[0]) ** 2 + (star.pos[1] - this.pos[1]) ** 2;
-        //
-        // sound.volume = 0.5;
-        // sound.play(); // Play a separate instance
     }
 
 

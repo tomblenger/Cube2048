@@ -1408,6 +1408,7 @@ if (detectDevice()) {
 }
 
 
+
 // window.onload = function() {
 //     drawController();
 // };

@@ -9,15 +9,11 @@ const settingsForm = document.getElementById('settingsForm');
 const playerName = document.getElementById("playerName");
 const controllerCanvas = document.getElementById('controllerCanvas');
 const customAlert = document.getElementById("customAlert");
-// const desktopMode = document.getElementById("com");
-// const mobileMode = document.getElementById("phone");
 const cancelButton = document.getElementById('closeSettingsButton');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
-// const ctx = controllerCanvas.getContext('2d');
 const style = document.getElementById('colorStyle');
-
-
+const audioElement = document.getElementById('myAudio');
 
 const PERSON = 0;
 const FOOD = 1;
@@ -38,39 +34,17 @@ const DISTANCE = 1;
 const ANTI_DISTANCE = 2;
 const RAND = 3;
 
-let nameText;
-let frameCount = 0;
-let runningReplay = true;
-let cubeName = "PPP";
-let colorStyle = 'style1';
-let difficulty = "easy";
-let threeAngle;
-let touch = false;
-let isMobile = false;
-let controllable = false;
-let isIncreasable = false;
-let moveSpeed = { x: 0.035, y: 0.035 };
-let moveSpeedStar = { x: 0.035, y: 0.035 };
-let openForm = false;
-let isDragging = false;
-let currentControllerPos = { x: 50, y: 50 };
-let joyX;
-let joyY;
-let canvasPos = {
-    width: 400,
-    height: 400,
-};
+
 const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 };
-const outerRadius = 97; // Outer circle radius
-const innerRadius = 50; // Inner circle radius
 const maxWidth = sizes.width * 2;
 const maxHeight = sizes.height * 2;
 const screenScale = 200;
 const maxScaledWidth = maxWidth / screenScale;
 const maxScaledHeight = maxHeight / screenScale;
+const audioContext = new(window.AudioContext || window.webkitAudioContext)();
 
 const scaledSize = {
     width: sizes.width / screenScale * 2,
@@ -102,7 +76,7 @@ const color2 = [
     'rgb(58, 7, 73)', //256
     'rgb(123, 235, 108)',
     'rgb(199, 196, 50)',
-    'rgb(27, 92, 214)',
+    'rgb(27, 92, 214)'
 ];
 
 const color3 = [
@@ -116,9 +90,26 @@ const color3 = [
     'rgb(96, 253, 245)', //256
     'rgb(252, 3, 3)',
     'rgb(209, 250, 196)',
-    'rgb(110, 251, 239)',
+    'rgb(110, 251, 239)'
 ];
 
+
+let nameText;
+let frameCount = 0;
+let runningReplay = true;
+let cubeName = "PPP";
+let colorStyle = 'style1';
+let difficulty = "easy";
+let threeAngle;
+let isMobile = false;
+let isIncreasable = false;
+let moveSpeed = { x: 0.035, y: 0.035 };
+let moveSpeedStar = { x: 0.035, y: 0.035 };
+let openForm = false;
+let currentControllerPos = { x: 50, y: 50 };
+let touchSize = { width: 100, height: 100 }
+let joyX;
+let joyY;
 let bProduce = true;
 let star;
 let replayBots = [];
@@ -138,47 +129,30 @@ let tailBuf = null;
 let mouseCount = 0;
 let gameOverCount = 0;
 let frameBufferCount = 0;
-
 let trace = [];
-
-// let innerCircleX = controllerCanvas.width / 2;
-// let innerCircleY = controllerCanvas.height / 2;
-
-let touchSize = {
-    width: 100,
-    height: 100
-}
-
 let isPlaying = false;
-const audioElement = document.getElementById('myAudio');
+let source = null; // Global variable for the current audio source
+let joystick;
 
-// Play the audio
+
+
 function playAudio(cubeType) {
     if (!isPlaying && cubeType === PERSON) {
         isPlaying = true;
-        audioElement.currentTime = 0; // Reset to the beginning
+        audioElement.currentTime = 0;
         audioElement.play();
         isPlaying = false;
-        // audioElement.volume = event.target.value;
     }
 }
 
-// Pause the audio
 function pauseAudio() {
     audioElement.pause();
 }
 
-// Replay the audio
 function replayAudio() {
     audioElement.currentTime = 0; // Reset to the beginning
     audioElement.play(); // Play the audio again
 }
-
-
-
-const audioContext = new(window.AudioContext || window.webkitAudioContext)();
-let source = null; // Global variable for the current audio source
-
 
 function playSound() {
     // If a sound is already playing, stop it before starting a new one
@@ -207,10 +181,6 @@ function playSound() {
         });
 }
 
-// Call the playSound function to start the sound
-// playSound();
-
-// If you want to manually restart the sound at any time:
 function restartSound() {
     playSound(); // This will restart the sound
 }
@@ -229,10 +199,10 @@ function isPointInRectangle(px, py, rect) {
     let [x0, y0, x1, y1, x2, y2, x3, y3] = rect;
 
     return (
-      isSameSide(px, py, x2, y2, x0, y0, x1, y1) &&
-      isSameSide(px, py, x3, y3, x1, y1, x2, y2) &&
-      isSameSide(px, py, x0, y0, x2, y2, x3, y3) &&
-      isSameSide(px, py, x1, y1, x3, y3, x0, y0)
+        isSameSide(px, py, x2, y2, x0, y0, x1, y1) &&
+        isSameSide(px, py, x3, y3, x1, y1, x2, y2) &&
+        isSameSide(px, py, x0, y0, x2, y2, x3, y3) &&
+        isSameSide(px, py, x1, y1, x3, y3, x0, y0)
     );
 }
 
@@ -244,7 +214,7 @@ function isLineIntersecting(ax, ay, bx, by, cx, cy, dx, dy) {
 
     function onSegment(px, py, qx, qy, rx, ry) {
         return Math.min(px, qx) <= rx && rx <= Math.max(px, qx) &&
-          Math.min(py, qy) <= ry && ry <= Math.max(py, qy);
+            Math.min(py, qy) <= ry && ry <= Math.max(py, qy);
     }
 
     let o1 = orientation(ax, ay, bx, by, cx, cy);
@@ -273,8 +243,10 @@ function isLineRectangleOverlapping(line, rect) {
 
     // Case 2: Line intersects any rectangle edge
     let edges = [
-        [x0, y0, x1, y1], [x1, y1, x2, y2],
-        [x2, y2, x3, y3], [x3, y3, x0, y0]
+        [x0, y0, x1, y1],
+        [x1, y1, x2, y2],
+        [x2, y2, x3, y3],
+        [x3, y3, x0, y0]
     ];
 
     return edges.some(edge => isLineIntersecting(px1, py1, px2, py2, ...edge));
@@ -506,7 +478,8 @@ class Cube {
     }
 
     eatFoodAround() {
-        let deltaX = 0 , deltaY = 0;
+        let deltaX = 0,
+            deltaY = 0;
         let alpha = 0;
         let bCrash = false;
         let bOverlap = false;
@@ -524,15 +497,18 @@ class Cube {
             if (deltaX < 0) deltaX = -deltaX;
             if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
 
-                for (let j = 0; j < 4; j ++) {
+                for (let j = 0; j < 4; j++) {
                     if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], this.corner)) bCrash = true;
                     if (isPointInRectangle(this.corner[j * 2], this.corner[j * 2 + 1], monster.corner)) bCrash = true;
                 }
-                if( isLineRectangleOverlapping([[this.corner[6], this.corner[7]], [this.corner[0], this.corner[1]]], monster.corner)) {
+                if (isLineRectangleOverlapping([
+                        [this.corner[6], this.corner[7]],
+                        [this.corner[0], this.corner[1]]
+                    ], monster.corner)) {
                     bOverlap = true;
                 }
             }
-            if(bCrash) {
+            if (bCrash) {
                 if (monster.size <= this.size) {
                     monster.eat = true;
                     playAudio(this.type);
@@ -549,8 +525,7 @@ class Cube {
                     let index = bufFood.findIndex(item => item === i);
                     if (index === -1) bufFood.push(i);
                 } else {
-                    if (bOverlap)
-                    {
+                    if (bOverlap) {
                         let bufCenterAngle = Math.atan2((monster.pos[1] - this.pos[1]), (monster.pos[0] - this.pos[0])) - this.cube.rotation.z;
                         if (bufCenterAngle > 0) monster.cube.rotation.z -= Math.PI / 2000;
                         else if (bufCenterAngle < 0) monster.cube.rotation.z += Math.PI / 2000;
@@ -566,7 +541,8 @@ class Cube {
     }
 
     eatBotAround() {
-        let deltaX = 0 , deltaY = 0;
+        let deltaX = 0,
+            deltaY = 0;
         let alpha = 0;
         let bCrash = false;
         let bOverlap = false;
@@ -586,15 +562,18 @@ class Cube {
                 if (deltaX < 0) deltaX = -deltaX;
                 if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
 
-                    for (let j = 0; j < 4; j ++) {
+                    for (let j = 0; j < 4; j++) {
                         if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], this.corner)) bCrash = true;
                         if (isPointInRectangle(this.corner[j * 2], this.corner[j * 2 + 1], monster.corner)) bCrash = true;
                     }
-                    if( isLineRectangleOverlapping([[this.corner[6], this.corner[7]], [this.corner[0], this.corner[1]]], monster.corner)) {
+                    if (isLineRectangleOverlapping([
+                            [this.corner[6], this.corner[7]],
+                            [this.corner[0], this.corner[1]]
+                        ], monster.corner)) {
                         bOverlap = true;
                     }
                 }
-                if(bCrash) {
+                if (bCrash) {
                     if (monster.size < this.size) {
                         playAudio(this.type);
                         scene.remove(monster.cube);
@@ -612,8 +591,7 @@ class Cube {
                         let index = bufBots.findIndex(bufBot => bufBot === i);
                         if (index === -1) bufBots.push(i);
                     } else {
-                        if (bOverlap)
-                        {
+                        if (bOverlap) {
                             let bufCenterAngle = Math.atan2((monster.pos[1] - this.pos[1]), (monster.pos[0] - this.pos[0])) - this.cube.rotation.z;
                             if (bufCenterAngle > 0) monster.cube.rotation.z -= Math.PI / 2000;
                             else if (bufCenterAngle < 0) monster.cube.rotation.z += Math.PI / 2000;
@@ -767,41 +745,87 @@ class Cube {
         this.tail.forEach((item, j) => {
             let traceHis;
             if (mouseCount === 0) {
-                if( j > 0) {
+                if (j > 0) {
                     switch (this.tail[j - 1].size) {
-                        case 2048: traceHis = 20; break;
-                        case 1024: traceHis = 19; break;
-                        case 512: traceHis = 19; break;
-                        case 256: traceHis = 18; break;
-                        case 128: traceHis = 18; break;
-                        case 64: traceHis = 17; break;
-                        case 32: traceHis = 16; break;
-                        case 16: traceHis = 15; break;
-                        case 8: traceHis = 14; break;
-                        case 2: case 4: traceHis = 13; break;
-                        default: traceHis = 21; break;
+                        case 2048:
+                            traceHis = 20;
+                            break;
+                        case 1024:
+                            traceHis = 19;
+                            break;
+                        case 512:
+                            traceHis = 19;
+                            break;
+                        case 256:
+                            traceHis = 18;
+                            break;
+                        case 128:
+                            traceHis = 18;
+                            break;
+                        case 64:
+                            traceHis = 17;
+                            break;
+                        case 32:
+                            traceHis = 16;
+                            break;
+                        case 16:
+                            traceHis = 15;
+                            break;
+                        case 8:
+                            traceHis = 14;
+                            break;
+                        case 2:
+                        case 4:
+                            traceHis = 13;
+                            break;
+                        default:
+                            traceHis = 21;
+                            break;
                     }
                     if (this.edge) traceHis += 2;
                 } else {
                     switch (this.size) {
-                        case 2048: traceHis = 20; break;
-                        case 1024: traceHis = 19; break;
-                        case 512: traceHis = 19; break;
-                        case 256: traceHis = 18; break;
-                        case 128: traceHis = 18; break;
-                        case 64: traceHis = 17; break;
-                        case 32: traceHis = 16; break;
-                        case 16: traceHis = 15; break;
-                        case 8: traceHis = 14; break;
-                        case 2: case 4: traceHis = 13; break;
-                        default: traceHis = 21; break;
+                        case 2048:
+                            traceHis = 20;
+                            break;
+                        case 1024:
+                            traceHis = 19;
+                            break;
+                        case 512:
+                            traceHis = 19;
+                            break;
+                        case 256:
+                            traceHis = 18;
+                            break;
+                        case 128:
+                            traceHis = 18;
+                            break;
+                        case 64:
+                            traceHis = 17;
+                            break;
+                        case 32:
+                            traceHis = 16;
+                            break;
+                        case 16:
+                            traceHis = 15;
+                            break;
+                        case 8:
+                            traceHis = 14;
+                            break;
+                        case 2:
+                        case 4:
+                            traceHis = 13;
+                            break;
+                        default:
+                            traceHis = 21;
+                            break;
                     }
                     if (this.edge) traceHis += 2;
                 }
 
-                if(moveSpeedStar.x > moveSpeed.x) traceHis -= 3;
+                if (moveSpeedStar.x > moveSpeed.x) traceHis -= 3;
             }
-            if(j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
+            if (j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
             else item.arrIndex = this.bufAngle.length - traceHis;
 
             item.setAngle(this.bufAngle[item.arrIndex]);
@@ -989,7 +1013,6 @@ function addPlane() {
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
 }
-
 
 function drawX() {
     const material = new THREE.LineDashedMaterial({
@@ -1259,96 +1282,9 @@ function updateTable(person, bots) {
     });
 }
 
-function drawController(x = controllerCanvas.width / 2, y = controllerCanvas.height / 2) {
-    const centerX = controllerCanvas.width / 2;
-    const centerY = controllerCanvas.height / 2;
-
-    ctx.clearRect(0, 0, controllerCanvas.width, controllerCanvas.height);
-
-    // Outer Circle with Gradient & Glow
-    const gradient = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, outerRadius);
-    gradient.addColorStop(0, '#2e8588');
-    gradient.addColorStop(1, 'rgba(46, 133, 136, 0.5)'); // Transparent outer ring effect
-
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#42eacb';
-    ctx.shadowColor = '#42eacb';
-    ctx.shadowBlur = 10;
-    ctx.stroke();
-    ctx.shadowBlur = 0; // Reset shadow for next elements
-
-    // Inner Circle
-    ctx.beginPath();
-    ctx.arc(x, y, innerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#48558e'; // Inner circle color
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#1ebfb3'; // Inner circle border
-    ctx.stroke();
-
-    // Directional Arrows
-    const arrowOffsets = [
-        [centerX, centerY - outerRadius + 15, 'up'],
-        [centerX, centerY + outerRadius - 15, 'down'],
-        [centerX - outerRadius + 15, centerY, 'left'],
-        [centerX + outerRadius - 15, centerY, 'right']
-    ];
-
-    arrowOffsets.forEach(([ax, ay, dir]) => drawArrow(ax, ay, dir));
-}
-
-function drawArrow(x, y, direction, arrowSize = 25) {
-    if (!ctx) return; // Ensure the canvas context exists
-
-    ctx.fillStyle = '#42eacb'; // Arrow color
-    ctx.beginPath();
-
-    const halfSize = arrowSize / 2;
-
-    const arrowShapes = {
-        up: [
-            [x - halfSize, y + halfSize],
-            [x + halfSize, y + halfSize],
-            [x, y - arrowSize]
-        ],
-        down: [
-            [x - halfSize, y - halfSize],
-            [x + halfSize, y - halfSize],
-            [x, y + arrowSize]
-        ],
-        left: [
-            [x + halfSize, y - halfSize],
-            [x + halfSize, y + halfSize],
-            [x - arrowSize, y]
-        ],
-        right: [
-            [x - halfSize, y - halfSize],
-            [x - halfSize, y + halfSize],
-            [x + arrowSize, y]
-        ]
-    };
-
-    if (!arrowShapes[direction]) {
-        console.warn("Invalid direction:", direction);
-        return;
-    }
-
-    arrowShapes[direction].forEach(([px, py], index) => {
-        if (index === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-    });
-
-    ctx.closePath();
-    ctx.fill();
-}
-
 function detectDevice() {
-    const width = window.innerWidth || document.documentElement.clientWidth;
-    return ('ontouchstart' in window || navigator.maxTouchPoints > 0) && width < 1024;
+    // const width = window.innerWidth || document.documentElement.clientWidth;
+    // return ('ontouchstart' in window || navigator.maxTouchPoints > 0) && width < 1024;
     if (
         /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(
             navigator.userAgent,
@@ -1563,22 +1499,13 @@ function toggleSetting() {
 
 //----------------------------------------start pro--------------------------------------------//
 
-console.log("DEVICE", detectDevice())
 if (detectDevice()) {
     isMobile = true;
-    // Handle joystick movement
-
-    // controllerCanvas.style.display = 'block';
-    console.log("Mobile detected: Enable joystick.");
-    // Initialize joystick controls
 } else {
     isMobile = false;
-    console.log("Desktop detected: Use keyboard/mouse.");
-    // Use keyboard or mouse controls
 }
 
 
-let joystick;
 
 
 settingsButton.addEventListener('click', toggleSetting);
@@ -1586,10 +1513,12 @@ settingsButton.addEventListener('touchstart', toggleSetting);
 settingsButton.addEventListener('touchend', toggleSetting);
 
 if (isMobile) {
+    window.addEventListener("click", () => {
+        alert("Click detected!");
+    });
     gameForm.addEventListener("submit", function(event) {
         try {
-            event.preventDefault(); // Prevent the default form submission
-            // window.alert("Game OVer");
+            event.preventDefault();
             cubeName = playerName.value;
             gameForm.style.display = "none";
             document.addEventListener("touchend", startGame, { once: true });
@@ -1688,7 +1617,7 @@ if (isMobile) {
         if (!star) return;
         nameText.rotation.z = -star.cube.rotation.z;
 
-        canvasPos = getElementPositions(webgl);
+        // canvasPos = getElementPositions(webgl);
 
         mouse.x = (event.clientX / sizes.width) * 2 - 1;
         mouse.y = -(event.clientY / sizes.height) * 2 + 1;
@@ -1734,8 +1663,6 @@ if (isMobile) {
 
     // Add event listener for the save button
     saveSettingsButton.addEventListener('click', function() {
-        // Get the current value of the settings
-        // distance = distanceSlider.value; // get the updated distance value
         colorStyle = style.value;
 
         difficulty = document.getElementById('difficulty').value;
@@ -1752,11 +1679,6 @@ if (isMobile) {
         try {
             event.preventDefault(); // Prevent the default form submission
             cubeName = playerName.value;
-            // if (desktopMode.checked) {
-            //     touch = false;
-            // } else if (mobileMode.checked) {
-            //     touch = true;
-            // }
             gameForm.style.display = "none";
             document.addEventListener("click", startGame, { once: true });
         } catch (err) {}
@@ -1766,20 +1688,17 @@ if (isMobile) {
         running = true;
         animate();
     }
-
-
 };
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
+// const canvas = document.getElementById('webgl')
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 
 
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-// Use ACES tone mapping for more natural results
-
 
 initPro();
 mainEngine();

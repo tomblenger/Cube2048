@@ -1568,7 +1568,7 @@ if (isMobile) {
     }
 
     document.addEventListener('touchmove', (event) => {
-        isDragging = true;
+        // isDragging = true;
         if (!star) return;
         nameText.rotation.z = -star.cube.rotation.z;
 

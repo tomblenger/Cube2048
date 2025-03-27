@@ -143,7 +143,7 @@ let gameOverCount = 0;
 let controllerControl = false;
 let frameBufferCount = 0;
 
-var trace = [];
+let trace = [];
 
 // let innerCircleX = controllerCanvas.width / 2;
 // let innerCircleY = controllerCanvas.height / 2;
@@ -152,6 +152,73 @@ let touchSize = {
     width: 300,
     height: 250
 }
+
+let isPlaying = false;
+const audioElement = document.getElementById('myAudio');
+
+// Play the audio
+function playAudio(cubeType) {
+    if (!isPlaying && cubeType === PERSON) {
+        isPlaying = true;
+        audioElement.currentTime = 0; // Reset to the beginning
+        audioElement.play();
+        isPlaying = false;
+        // audioElement.volume = event.target.value;
+    }
+}
+
+// Pause the audio
+function pauseAudio() {
+    audioElement.pause();
+}
+
+// Replay the audio
+function replayAudio() {
+    audioElement.currentTime = 0; // Reset to the beginning
+    audioElement.play(); // Play the audio again
+}
+
+
+
+const audioContext = new(window.AudioContext || window.webkitAudioContext)();
+let source = null; // Global variable for the current audio source
+
+
+function playSound() {
+    // If a sound is already playing, stop it before starting a new one
+    if (source) {
+        source.stop();
+    }
+
+    // Fetch and decode the audio file
+    fetch("sound.mp3")
+        .then(response => response.arrayBuffer())
+        .then(data => audioContext.decodeAudioData(data))
+        .then(buffer => {
+            // Create a new source for the sound
+            source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(1000);
+
+            // Optionally, restart the sound when it ends
+            source.onended = () => {
+                playSound(); // Automatically restart when the sound finishes
+            };
+        })
+        .catch(error => {
+            console.error('Error playing the sound:', error)
+        });
+}
+
+// Call the playSound function to start the sound
+// playSound();
+
+// If you want to manually restart the sound at any time:
+function restartSound() {
+    playSound(); // This will restart the sound
+}
+
 
 function getElementPositions(element) {
     const rect = element.getBoundingClientRect();
@@ -351,7 +418,6 @@ class Cube {
 
     playSound() {}
 
-
     eatPlayerAround(player) {
         if (this.size <= player.size) return;
 
@@ -365,7 +431,6 @@ class Cube {
             document.getElementById("countNum").innerHTML = `${this.size}`;
             running = false;
             runningReplay = true;
-            this.playSound();
         }
     }
 
@@ -382,9 +447,9 @@ class Cube {
             let deltaX = monster.pos[0] - this.pos[0];
             if (deltaX < 0) deltaX = -deltaX;
             if (deltaX < minDist && deltaY < minDist) {
-                this.playSound();
                 if (monster.size <= this.size) {
                     monster.eat = true;
+                    playAudio(this.type);
                     scene.remove(monster.cube);
                     tailBuf = new Cube(TAIL, INITIAL);
                     tailBuf.create();
@@ -423,7 +488,7 @@ class Cube {
                 if (deltaX < 0) deltaX = -deltaX;
                 if ((deltaX < minDist) && deltaY < minDist) {
                     if (monster.size < this.size) {
-                        this.playSound();
+                        playAudio(this.type);
                         scene.remove(monster.cube);
                         scene.remove(monster.text);
                         tailBuf = new Cube(TAIL, INITIAL);
@@ -463,7 +528,6 @@ class Cube {
                     if (deltaX < 0) deltaX = -deltaX;
                     if ((deltaX < minDist) && deltaY < minDist) {
                         if (item.size < this.size) {
-                            this.playSound();
                             let eatBuf;
                             let restBuf;
                             eatBuf = bot.tail.slice(i, bot.tail.length);
@@ -471,6 +535,7 @@ class Cube {
                             restBuf = bot.tail.slice(0, i);
                             bot.tail = restBuf;
                             for (let k = i; k < bot.tail.length; k++) {
+                                playAudio(this.type);
                                 scene.remove(bot.tail[k].cube);
                                 scene.remove(bot.tail[k].text);
                             }
@@ -1342,110 +1407,118 @@ if (detectDevice()) {
     // Use keyboard or mouse controls
 }
 
+
 // window.onload = function() {
 //     drawController();
 // };
+window.onload = function() {
+    drawController();
+    // Call the playSound function to start the sound
 
 
 
-// controllerCanvas.addEventListener('mousedown', (event) => {
-//     const mouseX = event.offsetX;
-//     const mouseY = event.offsetY;
+    // controllerCanvas.addEventListener('mousedown', (event) => {
+    //     const mouseX = event.offsetX;
+    //     const mouseY = event.offsetY;
 
-//     const dx = mouseX - innerCircleX;
-//     const dy = mouseY - innerCircleY;
+    //     const dx = mouseX - innerCircleX;
+    //     const dy = mouseY - innerCircleY;
 
-//     if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
-//         isDragging = true;
-//     }
-// });
+    //     if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
+    //         isDragging = true;
+    //     }
+    // });
 
-// controllerCanvas.addEventListener('mousemove', (event) => {
-//     if (isDragging) {
-//         const mouseX = event.offsetX;
-//         const mouseY = event.offsetY;
+    // controllerCanvas.addEventListener('mousemove', (event) => {
+    //     if (isDragging) {
+    //         const mouseX = event.offsetX;
+    //         const mouseY = event.offsetY;
 
-//         const dx = mouseX - controllerCanvas.width / 2;
-//         const dy = mouseY - controllerCanvas.height / 2;
+    //         const dx = mouseX - controllerCanvas.width / 2;
+    //         const dy = mouseY - controllerCanvas.height / 2;
 
-//         // Calculate the distance between the center and the mouse position
-//         const distance = Math.sqrt(dx * dx + dy * dy);
+    //         // Calculate the distance between the center and the mouse position
+    //         const distance = Math.sqrt(dx * dx + dy * dy);
 
-//         // If the distance is less than or equal to the outer circle radius, move the inner circle
-//         if (distance <= outerRadius - innerRadius) {
-//             innerCircleX = mouseX;
-//             innerCircleY = mouseY;
-//         } else {
-//             // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
-//             const angle = Math.atan2(dy, dx);
-//             innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
-//             innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
-//         }
+    //         // If the distance is less than or equal to the outer circle radius, move the inner circle
+    //         if (distance <= outerRadius - innerRadius) {
+    //             innerCircleX = mouseX;
+    //             innerCircleY = mouseY;
+    //         } else {
+    //             // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
+    //             const angle = Math.atan2(dy, dx);
+    //             innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
+    //             innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
+    //         }
 
-//         // Redraw the controller with the updated inner circle position
-//         drawController(innerCircleX, innerCircleY);
-//     }
-// });
+    //         // Redraw the controller with the updated inner circle position
+    //         drawController(innerCircleX, innerCircleY);
+    //     }
+    // });
 
-// controllerCanvas.addEventListener('dblclick', () => {
-//     controllerControl = !controllerControl;
+    // controllerCanvas.addEventListener('dblclick', () => {
+    //     controllerControl = !controllerControl;
 
-//     if (controllerControl) {
-//         window.addEventListener('mousemove', handleMouseDown)
+    //     if (controllerControl) {
+    //         window.addEventListener('mousemove', handleMouseDown)
 
-//     } else {
-//         window.removeEventListener('mousemove', handleMouseDown);
-//     }
-// })
+    //     } else {
+    //         window.removeEventListener('mousemove', handleMouseDown);
+    //     }
+    // })
 
-// Named function for the mousedown event
+    // Named function for the mousedown event
 
-// function handleMouseDown(event) {
-//     let bufPos = { x: 0, y: 0 };
-//     bufPos.x = event.clientX;
-//     bufPos.y = event.clientY;
-//     let bottom = window.innerHeight - bufPos.y - outerRadius;
-//     let right = window.innerWidth - bufPos.x - outerRadius;
-//     controllerCanvas.style.bottom = `${bottom}px`;
-//     controllerCanvas.style.right = `${right}px`;
+    // function handleMouseDown(event) {
+    //     let bufPos = { x: 0, y: 0 };
+    //     bufPos.x = event.clientX;
+    //     bufPos.y = event.clientY;
+    //     let bottom = window.innerHeight - bufPos.y - outerRadius;
+    //     let right = window.innerWidth - bufPos.x - outerRadius;
+    //     controllerCanvas.style.bottom = `${bottom}px`;
+    //     controllerCanvas.style.right = `${right}px`;
 
-//     currentControllerPos.x = bufPos.x;
-//     currentControllerPos.y = bufPos.y;
-//     return currentControllerPos;
-// }
+    //     currentControllerPos.x = bufPos.x;
+    //     currentControllerPos.y = bufPos.y;
+    //     return currentControllerPos;
+    // }
 
-// controllerCanvas.addEventListener('mouseleave', () => {
-//     isDragging = false;
-//     drawController()
-// });
+    // controllerCanvas.addEventListener('mouseleave', () => {
+    //     isDragging = false;
+    //     drawController()
+    // });
 
-// controllerCanvas.addEventListener('mousedown', () => {
-//     controllable = true;
-// });
+    // controllerCanvas.addEventListener('mousedown', () => {
+    //     controllable = true;
+    // });
 
-// controllerCanvas.addEventListener('mouseup', () => {
-//     drawController();
-// })
+    // controllerCanvas.addEventListener('mouseup', () => {
+    //     drawController();
+    // })
 
-if (isMobile) {
-    joystick.on("move", (event, data) => {
-        const { angle, force } = data;
-        console.log(`Angle: ${angle.degree}, Force: ${force}`);
+    if (isMobile) {
+        joystick.on("move", (event, data) => {
+            const { angle, force } = data;
+            console.log(`Angle: ${angle.degree}, Force: ${force}`);
 
-        // Convert angle to movement
-        const radian = (angle.degree * Math.PI) / 180;
-        const speed = force * 0.05;
+            // Convert angle to movement
+            const radian = (angle.degree * Math.PI) / 180;
+            const speed = force * 0.05;
 
-        // Example: Move a player object in Three.js
-        // player.position.x += Math.cos(radian) * speed;
-        // player.position.z -= Math.sin(radian) * speed;
-    });
+            // Example: Move a player object in Three.js
+            // player.position.x += Math.cos(radian) * speed;
+            // player.position.z -= Math.sin(radian) * speed;
+        });
 
-    // Detect when joystick is released
-    joystick.on("end", () => {
-        console.log("Joystick released");
-    });
-} else {
+        // Detect when joystick is released
+        joystick.on("end", () => {
+            console.log("Joystick released");
+        });
+    } else {
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    };
     document.addEventListener('mouseup', () => {
         isDragging = false;
     });

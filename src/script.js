@@ -14,15 +14,10 @@ const customAlert = document.getElementById("customAlert");
 const cancelButton = document.getElementById('closeSettingsButton');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
-const ctx = controllerCanvas.getContext('2d');
+// const ctx = controllerCanvas.getContext('2d');
 const style = document.getElementById('colorStyle');
 
-// const joystick = nipplejs.create({
-//     zone: document.getElementById("joystick-container"),
-//     mode: "dynamic", // Joystick appears where the user touches
-//     color: "blue",
-//     size: 100
-// });
+
 
 const PERSON = 0;
 const FOOD = 1;
@@ -58,7 +53,9 @@ let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
 let openForm = false;
 let isDragging = false;
-let currentControllerPos = { x: 97, y: window.innerHeight - 97 };
+let currentControllerPos = { x: 50, y: 50 };
+let joyX;
+let joyY;
 let canvasPos = {
     width: 400,
     height: 400,
@@ -140,7 +137,6 @@ let bufBots = [];
 let tailBuf = null;
 let mouseCount = 0;
 let gameOverCount = 0;
-let controllerControl = false;
 let frameBufferCount = 0;
 
 let trace = [];
@@ -149,8 +145,8 @@ let trace = [];
 // let innerCircleY = controllerCanvas.height / 2;
 
 let touchSize = {
-    width: 300,
-    height: 250
+    width: 100,
+    height: 100
 }
 
 let isPlaying = false;
@@ -638,7 +634,7 @@ class Cube {
     }
 
     setStarBuffer() {
-        this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+        this.ref = ((mouse.x === 0 && mouse.y === 0)) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
         if (this.bufPos.length < 15) {
             this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
             this.bufPos.push([...this.pos]);
@@ -1320,6 +1316,16 @@ function drawArrow(x, y, direction, arrowSize = 25) {
 function detectDevice() {
     const width = window.innerWidth || document.documentElement.clientWidth;
     return ('ontouchstart' in window || navigator.maxTouchPoints > 0) && width < 1024;
+    if (
+        /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(
+            navigator.userAgent,
+        ) ||
+        /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(
+            navigator.userAgent.substr(0, 4),
+        )
+    ) {
+        return true;
+    } else { return false; }
 }
 
 function animate() {
@@ -1345,6 +1351,7 @@ function animate() {
 
 
     if (star) {
+
         star.setStarBuffer();
         star.setStarPosAngle();
         star.mergeTailEngine();
@@ -1356,6 +1363,7 @@ function animate() {
         }
 
         nameText.text = cubeName;
+
         cameraCtrl();
     }
 
@@ -1500,24 +1508,24 @@ function toggleSetting() {
     }
 }
 
-function enterFullscreen() {
-    let elem = document.documentElement; // Fullscreen the entire page
+// function enterFullscreen() {
+//     let elem = document.documentElement; // Fullscreen the entire page
 
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.mozRequestFullScreen) { // Firefox
-        elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE/Edge
-        elem.msRequestFullscreen();
-    }
-}
+//     if (elem.requestFullscreen) {
+//         elem.requestFullscreen();
+//     } else if (elem.mozRequestFullScreen) { // Firefox
+//         elem.mozRequestFullScreen();
+//     } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
+//         elem.webkitRequestFullscreen();
+//     } else if (elem.msRequestFullscreen) { // IE/Edge
+//         elem.msRequestFullscreen();
+//     }
+// }
 
-// Automatically enter fullscreen on load
-window.addEventListener('load', () => {
-    setTimeout(enterFullscreen, 1000); // Delay to ensure page is fully loaded
-});
+// // Automatically enter fullscreen on load
+// window.addEventListener('load', () => {
+//     setTimeout(enterFullscreen, 1000); // Delay to ensure page is fully loaded
+// });
 
 //----------------------------------------start pro--------------------------------------------//
 
@@ -1536,157 +1544,120 @@ if (detectDevice()) {
 }
 
 
-
-// window.onload = function() {
-//     drawController();
-// };
-window.onload = function() {
-    drawController();
-    // Call the playSound function to start the sound
+let joystick;
 
 
+settingsButton.addEventListener('click', toggleSetting);
+settingsButton.addEventListener('touchstart', toggleSetting);
+settingsButton.addEventListener('touchend', toggleSetting);
 
-    // controllerCanvas.addEventListener('mousedown', (event) => {
-    //     const mouseX = event.offsetX;
-    //     const mouseY = event.offsetY;
-
-    //     const dx = mouseX - innerCircleX;
-    //     const dy = mouseY - innerCircleY;
-
-    //     if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
-    //         isDragging = true;
-    //     }
-    // });
-
-    // controllerCanvas.addEventListener('mousemove', (event) => {
-    //     if (isDragging) {
-    //         const mouseX = event.offsetX;
-    //         const mouseY = event.offsetY;
-
-    //         const dx = mouseX - controllerCanvas.width / 2;
-    //         const dy = mouseY - controllerCanvas.height / 2;
-
-    //         // Calculate the distance between the center and the mouse position
-    //         const distance = Math.sqrt(dx * dx + dy * dy);
-
-    //         // If the distance is less than or equal to the outer circle radius, move the inner circle
-    //         if (distance <= outerRadius - innerRadius) {
-    //             innerCircleX = mouseX;
-    //             innerCircleY = mouseY;
-    //         } else {
-    //             // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
-    //             const angle = Math.atan2(dy, dx);
-    //             innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
-    //             innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
-    //         }
-
-    //         // Redraw the controller with the updated inner circle position
-    //         drawController(innerCircleX, innerCircleY);
-    //     }
-    // });
-
-    // controllerCanvas.addEventListener('dblclick', () => {
-    //     controllerControl = !controllerControl;
-
-    //     if (controllerControl) {
-    //         window.addEventListener('mousemove', handleMouseDown)
-
-    //     } else {
-    //         window.removeEventListener('mousemove', handleMouseDown);
-    //     }
-    // })
-
-    // Named function for the mousedown event
-
-    // function handleMouseDown(event) {
-    //     let bufPos = { x: 0, y: 0 };
-    //     bufPos.x = event.clientX;
-    //     bufPos.y = event.clientY;
-    //     let bottom = window.innerHeight - bufPos.y - outerRadius;
-    //     let right = window.innerWidth - bufPos.x - outerRadius;
-    //     controllerCanvas.style.bottom = `${bottom}px`;
-    //     controllerCanvas.style.right = `${right}px`;
-
-    //     currentControllerPos.x = bufPos.x;
-    //     currentControllerPos.y = bufPos.y;
-    //     return currentControllerPos;
-    // }
-
-    // controllerCanvas.addEventListener('mouseleave', () => {
-    //     isDragging = false;
-    //     drawController()
-    // });
-
-    // controllerCanvas.addEventListener('mousedown', () => {
-    //     controllable = true;
-    // });
-
-    // controllerCanvas.addEventListener('mouseup', () => {
-    //     drawController();
-    // })
-
-
-
-    settingsButton.addEventListener('click', toggleSetting);
-    settingsButton.addEventListener('touchstart', toggleSetting);
-    settingsButton.addEventListener('touchend', toggleSetting);
-
-    if (isMobile) {
-        // joystick.on("move", (event, data) => {
-        //     const { angle, force } = data;
-        //     console.log(`Angle: ${angle.degree}, Force: ${force}`);
-
-        //     // Convert angle to movement
-        //     const radian = (angle.degree * Math.PI) / 180;
-        //     const speed = force * 0.05;
-
-        //     // Example: Move a player object in Three.js
-        //     // player.position.x += Math.cos(radian) * speed;
-        //     // player.position.z -= Math.sin(radian) * speed;
-        // });
-
-        // // Detect when joystick is released
-        // joystick.on("end", () => {
-        //     console.log("Joystick released");
-        // });
-    } else {
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-    };
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
+if (isMobile) {
+    gameForm.addEventListener("submit", function(event) {
+        try {
+            event.preventDefault(); // Prevent the default form submission
+            // window.alert("Game OVer");
+            cubeName = playerName.value;
+            gameForm.style.display = "none";
+            document.addEventListener("touchend", startGame, { once: true });
+        } catch (err) {}
     });
 
+    function startGame() {
+
+        running = true;
+        animate();
+    }
+
+    document.addEventListener('touchmove', (event) => {
+        isDragging = true;
+        if (!star) return;
+        nameText.rotation.z = -star.cube.rotation.z;
+
+        let touch = event.touches[0];
+        joyX = touch.clientX;
+        joyY = window.innerHeight - touch.clientY;
+
+        const dx = joyX - currentControllerPos.x;
+        const dy = joyY - currentControllerPos.y;
+        const calRadius = (dx * dx + dy * dy);
+
+        const touchWidth = touchSize.width;
+        const touchHeight = touchSize.height;
+        if (calRadius < touchWidth * touchWidth) {
+            mouse.x = joyX / touchWidth * 2 - 1;
+            mouse.y = joyY / touchHeight * 2 - 1;
+        }
+    });
+
+    document.getElementById("closeAlert").addEventListener("touchend", function() {
+        document.getElementById("customAlert").style.display = 'none';
+        removeAll();
+        runningReplay = false;
+        gameOverCount = 0;
+        running = false;
+        initPro()
+        makeInitialFood();
+        animate();
+
+        gameForm.style.display = "block";
+    });
+
+    document.getElementById("viewReplay").addEventListener("touchend", function() {
+        document.getElementById("customAlert").style.display = 'none';
+        scene.remove(star.cube);
+
+        star.tail.forEach((item) => scene.remove(item.cube));
+        star.newtail.forEach(item => scene.remove(item.cube));
+
+        bots.forEach(bot => {
+            scene.remove(bot.cube);
+            bot.tail.forEach((item) => scene.remove(item.cube));
+        });
+
+        food.forEach(item => scene.remove(item.cube));
+        viewReplayEngine();
+
+    });
+
+    window.onload = function() {
+        const joystickContainer = document.getElementById("joystick-container");
+        if (!joystickContainer) {
+            console.error("joystick-container not found!");
+            return;
+        }
+
+        joystick = nipplejs.create({
+            zone: joystickContainer,
+            mode: "dynamic",
+            color: "blue",
+            size: 100
+        });
+    };
+
+    // Add event listener for the save button
+    saveSettingsButton.addEventListener('touchend', function() {
+
+        colorStyle = style.value;
+
+        difficulty = document.getElementById('difficulty').value;
+        settingsForm.classList.remove('block');
+        settingsForm.classList.add('hidden');
+    });
+
+    cancelButton.addEventListener('touchend', () => {
+        settingsForm.classList.remove('block');
+        settingsForm.classList.add('hidden');
+    })
+
+} else {
     document.addEventListener('mousemove', (event) => {
         if (!star) return;
         nameText.rotation.z = -star.cube.rotation.z;
 
         canvasPos = getElementPositions(webgl);
 
-        const deltaSize = {
-            width: -currentControllerPos.x + outerRadius,
-            height: -currentControllerPos.y + outerRadius
-        };
-        if (isMobile) {
-            if (controllable && isDragging) {
-                const dx = currentControllerPos.x - event.clientX;
-                const dy = currentControllerPos.y - event.clientY;
-                const calRadius = (dx * dx + dy * dy);
-
-                if (calRadius < outerRadius * outerRadius && touchSize.width) {
-                    mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
-                    mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
-                    mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
-                }
-            }
-        } else {
-            if (sizes.width && sizes.height) {
-                mouse.x = (event.clientX / sizes.width) * 2 - 1;
-                mouse.delta = 1 - (event.clientX / sizes.width) * 2;
-                mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-            }
-        }
+        mouse.x = (event.clientX / sizes.width) * 2 - 1;
+        mouse.y = -(event.clientY / sizes.height) * 2 + 1;
     });
 
     document.getElementById("closeAlert").addEventListener("click", function() {
@@ -1725,12 +1696,7 @@ window.onload = function() {
         } else isIncreasable = true;
     })
 
-    webgl.addEventListener('mouseup', () => {
-        controllable = false;
-        isIncreasable = false;
-
-    });
-
+    webgl.addEventListener('mouseup', () => { isIncreasable = false; });
 
     // Add event listener for the save button
     saveSettingsButton.addEventListener('click', function() {
@@ -1761,14 +1727,14 @@ window.onload = function() {
             document.addEventListener("click", startGame, { once: true });
         } catch (err) {}
     });
-}
 
-function startGame() {
-    running = true;
-    animate();
-}
+    function startGame() {
+        running = true;
+        animate();
+    }
 
 
+};
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');

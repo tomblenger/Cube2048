@@ -1,183 +1,164 @@
-@import "tailwindcss";
-
-/* Modal Background */
-
-.kill_modal {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 9999;
-    background: transparent;
-}
-
-
-/* Modal Box */
-
-.kill_modal-content {
-    min-width: 600px;
-    padding: 50px;
-    border-radius: 15px;
-    text-align: center;
-    width: 320px;
-    box-shadow: 0 0 15px rgba(255, 200, 50, 0.5);
-    border: 2px solid rgba(255, 200, 50, 0.8);
-}
-
-
-/* Title */
-
-#alertTitle {
-    font-size: 82px;
-    font-weight: 900;
-    margin-bottom: 5%;
-    text-transform: uppercase;
-    color: #ff3c3c;
-    text-shadow: 2px 2px 0px #1f6b35, /* Dark green inner shadow */
-    4px 4px 0px #0d4520, /* Deeper shadow */
-    0px 0px 15px #3cff77;
-    font-family: 'Arial Black', sans-serif;
-    letter-spacing: 2px;
-}
-
-
-/* Message */
-
-#alertMessage {
-    font-size: 30px;
-    font-weight: 900;
-    margin-bottom: 10%;
-    text-transform: uppercase;
-    color: #50ff3c;
-    text-shadow: 2px 2px 0px #1f6b35, /* Dark green inner shadow */
-    4px 4px 0px #0d4520, /* Deeper shadow */
-    0px 0px 15px #3cff77;
-    font-family: 'Arial Black', sans-serif;
-    letter-spacing: 2px;
-}
-
-
-/* Glowing Countdown Number */
-
-.decor-box {
-    background: linear-gradient(180deg, #ffbb33, #ff8800);
-    width: 150px;
-    height: 150px;
-    margin: 15px auto;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 10px #ffb84d;
-    margin-bottom: 40px;
-}
-
-.countdown-number {
-    font-size: 100px;
-    font-weight: bold;
-    color: white;
-    text-shadow: 0 0 10px #fff;
-}
-
-
-/* Button Container */
-
-.buttons {
-    margin-top: 15px;
-    margin-left: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-
-/* Button Styles */
-
-.btn {
-    display: block;
-    width: 80%;
-    padding: 12px;
-    font-size: 30px;
-    font-weight: bold;
-    color: white;
-    background: linear-gradient(to bottom, #ffcc33, #ff8800);
-    border: none;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: 0.3s ease;
-    box-shadow: 0 4px 8px rgba(255, 153, 0, 0.5);
-}
-
-.btn:hover {
-    background: linear-gradient(to bottom, #ffdd55, #ff9900);
-    box-shadow: 0 6px 12px rgba(255, 180, 50, 0.7);
-}
-
-
-/* Icon in Button */
-
-.btn .icon {
-    margin-right: 8px;
-    font-size: 30px;
-    color: white;
-}
-
-
-/* Special Button Colors */
-
-.btn-revive {
-    background: linear-gradient(to bottom, #ff6600, #ff3300);
-    margin-bottom: 30px;
-}
-
-.btn-revive:hover {
-    background: linear-gradient(to bottom, #ff7733, #ff4444);
-}
-
-@media (max-width: 767px) {
+    @import "tailwindcss";
+    /* Modal Background */
+    
+    .kill_modal {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        background: transparent;
+    }
+    /* Modal Box */
+    
     .kill_modal-content {
-        min-width: 200px;
-        padding: 0px;
-        padding-top: 30px;
-        padding-bottom: 30px;
+        min-width: 600px;
+        padding: 50px;
         border-radius: 15px;
+        text-align: center;
         width: 320px;
         box-shadow: 0 0 15px rgba(255, 200, 50, 0.5);
+        border: 2px solid rgba(255, 200, 50, 0.8);
     }
+    /* Title */
+    
     #alertTitle {
-        font-size: 42px;
+        font-size: 82px;
+        font-weight: 900;
+        margin-bottom: 5%;
+        text-transform: uppercase;
+        color: #ff3c3c;
+        text-shadow: 2px 2px 0px #1f6b35, /* Dark green inner shadow */
+        4px 4px 0px #0d4520, /* Deeper shadow */
+        0px 0px 15px #3cff77;
+        font-family: 'Arial Black', sans-serif;
+        letter-spacing: 2px;
     }
+    /* Message */
+    
     #alertMessage {
         font-size: 30px;
+        font-weight: 900;
         margin-bottom: 10%;
+        text-transform: uppercase;
+        color: #50ff3c;
+        text-shadow: 2px 2px 0px #1f6b35, /* Dark green inner shadow */
+        4px 4px 0px #0d4520, /* Deeper shadow */
+        0px 0px 15px #3cff77;
+        font-family: 'Arial Black', sans-serif;
+        letter-spacing: 2px;
     }
+    /* Glowing Countdown Number */
+    
+    .decor-box {
+        background: linear-gradient(180deg, #ffbb33, #ff8800);
+        width: 150px;
+        height: 150px;
+        margin: 15px auto;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px #ffb84d;
+        margin-bottom: 40px;
+    }
+    
+    .countdown-number {
+        font-size: 100px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 0 10px #fff;
+    }
+    /* Button Container */
+    
+    .buttons {
+        margin-top: 15px;
+        margin-left: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    /* Button Styles */
+    
     .btn {
+        display: block;
         width: 80%;
-        font-size: 20px;
+        padding: 12px;
+        font-size: 30px;
+        font-weight: bold;
+        color: white;
+        background: linear-gradient(to bottom, #ffcc33, #ff8800);
+        border: none;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: 0.3s ease;
+        box-shadow: 0 4px 8px rgba(255, 153, 0, 0.5);
     }
+    
+    .btn:hover {
+        background: linear-gradient(to bottom, #ffdd55, #ff9900);
+        box-shadow: 0 6px 12px rgba(255, 180, 50, 0.7);
+    }
+    /* Icon in Button */
+    
     .btn .icon {
         margin-right: 8px;
-        font-size: 20px;
+        font-size: 30px;
+        color: white;
     }
-    .decor-box {
-        width: 100px;
-        height: 100px;
+    /* Special Button Colors */
+    
+    .btn-revive {
+        background: linear-gradient(to bottom, #ff6600, #ff3300);
+        margin-bottom: 30px;
     }
-    .buttons {
-        margin-left: 50px;
+    
+    .btn-revive:hover {
+        background: linear-gradient(to bottom, #ff7733, #ff4444);
     }
-    .countdown-number {
-        font-size: 50px;
+    
+    @media (max-width: 767px) {
+        .kill_modal-content {
+            min-width: 200px;
+            padding: 0px;
+            padding-top: 30px;
+            padding-bottom: 30px;
+            border-radius: 15px;
+            width: 320px;
+            box-shadow: 0 0 15px rgba(255, 200, 50, 0.5);
+        }
+        #alertTitle {
+            font-size: 42px;
+        }
+        #alertMessage {
+            font-size: 30px;
+            margin-bottom: 10%;
+        }
+        .btn {
+            width: 80%;
+            font-size: 20px;
+        }
+        .btn .icon {
+            margin-right: 8px;
+            font-size: 20px;
+        }
+        .decor-box {
+            width: 100px;
+            height: 100px;
+        }
+        .buttons {
+            margin-left: 50px;
+        }
+        .countdown-number {
+            font-size: 50px;
+        }
     }
-}
-
-
-/* 
+    /* 
 #controllerCanvas {
     width: 200px;
     height: 200px;
@@ -187,20 +168,13 @@
     z-index: 100;
     display: none
 } */
-
-
-/* #joystick-container { */
-
-
-/* position: absolute;
-    bottom: 10%;
-    left: 5%;
-    background-color: transparent;
-    width: 150px;
-    height: 150px; */
-
-
-/* z-index: 150000; */
-
-
-/* } */
+    
+    #joystick-container {
+        position: absolute;
+        bottom: 0!important;
+        left: 0;
+        background-color: wheat;
+        width: 100px;
+        height: 100px;
+        z-index: 150000;
+    }

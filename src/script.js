@@ -14,6 +14,10 @@ const gameForm = document.getElementById("game-form");
 const style = document.getElementById('colorStyle');
 const audioElement = document.getElementById('myAudio');
 const joystickContainer = document.getElementById('joystick-container');
+const joystick = document.getElementById("joystick");
+const joystickInner = document.querySelector('.joystick-inner');
+let joystickRect = joystick.getBoundingClientRect();
+let innerSize = joystickInner.clientWidth / 2;
 
 const PERSON = 0;
 const FOOD = 1;
@@ -23,9 +27,6 @@ const INITIAL = 1;
 
 const TIME_SPACE_BOT = 100;
 const TIME_SPACE_TABLE = 200;
-const MAX_BOT = 20;
-const MAX_INIT_FOOD = 30;
-const MAX_FOOD = 1000;
 const TIME_SPACE_FOOD = 100;
 const EAT_COUNT = 35;
 
@@ -92,7 +93,6 @@ const color3 = [
     'rgb(110, 251, 239)'
 ];
 
-
 let nameText;
 let frameCount = 0;
 let runningReplay = true;
@@ -101,7 +101,7 @@ let colorStyle = 'style1';
 let difficulty = "easy";
 let threeAngle;
 let isMobile;
-let isIncreasable = false;
+let isIncrease = false;
 let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
 let openForm = false;
@@ -130,9 +130,9 @@ let gameOverCount = 0;
 let frameBufferCount = 0;
 let trace = [];
 let isPlaying = false;
-let joystick;
-
-
+let MAX_BOT = 20;
+let MAX_INIT_FOOD = 30;
+let MAX_FOOD = 40;
 
 function playAudio(cubeType) {
     if (!isPlaying && cubeType === PERSON) {
@@ -1285,7 +1285,7 @@ function cleanScene() {
 function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
-    if (isIncreasable) {
+    if (isIncrease) {
         frameBufferCount++;
         if (frameBufferCount < 300) {
             moveSpeedStar = {
@@ -1294,7 +1294,7 @@ function animate() {
                 y: 0.05
             }
         } else {
-            isIncreasable = false;
+            isIncrease = false;
             frameBufferCount = 600;
         }
     } else {
@@ -1310,7 +1310,7 @@ function animate() {
         star.setStarPosAngle();
         star.mergeTailEngine();
         star.traceEngine();
-        if (isIncreasable) {
+        if (isIncrease) {
             star.drawTimer();
         } else {
             star.removeTimer();
@@ -1470,20 +1470,29 @@ settingsButton.addEventListener('click', toggleSetting);
 settingsButton.addEventListener('touchstart', toggleSetting);
 settingsButton.addEventListener('touchend', toggleSetting);
 
+
 if (isMobile) {
+    MAX_INIT_FOOD = 10;
+    MAX_FOOD = 15;
+    MAX_BOT = 4;
     joystickContainer.style.display = 'block';
     document.addEventListener("touchmove", (event) => {
         let touch = event.touches[0];
-        const joystick = document.getElementById("joystick");
         const rect = joystick.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const deltaX = touch.clientX - centerX;
-        const deltaY = touch.clientY - centerY;
-        const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-        const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), 20);
-        joystick.style.transform = `translate(${deltaX / 10}px, ${deltaY / 10}px) rotate(${angle}deg)`;
+        let deltaX = touch.clientX - centerX;
+        let deltaY = touch.clientY - centerY;
+        const angle = Math.atan2(deltaY, deltaX);
+        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) + 20;
+        if(distance > 50) {
+            deltaX = 30 * Math.cos(angle);
+            deltaY = 30 * Math.sin(angle);
+        }
+        joystickInner.style.transform = `translate(${deltaX-20}px, ${deltaY-20}px)`;
     });
+    joystick.addEventListener('touchstart', startDrag);
+    joystick.addEventListener('touchend', resetJoystick);
 
     gameForm.addEventListener("submit", function(event) {
         try {
@@ -1526,7 +1535,7 @@ if (isMobile) {
         runningReplay = false;
         gameOverCount = 0;
         running = false;
-        initPro()
+        initPro();
         makeInitialFood();
         animate();
 
@@ -1547,6 +1556,7 @@ if (isMobile) {
 
         food.forEach(item => scene.remove(item.cube));
         star.removeTimer();
+        trace = [];
         viewReplayEngine();
 
     });
@@ -1558,12 +1568,12 @@ if (isMobile) {
             return;
         }
 
-        joystick = nipplejs.create({
-            zone: joystickContainer,
-            mode: "dynamic",
-            color: "blue",
-            size: 100
-        });
+        // joystick = nipplejs.create({
+        //     zone: joystickContainer,
+        //     mode: "dynamic",
+        //     color: "blue",
+        //     size: 100
+        // });
     };
 
     // Add event listener for the save button
@@ -1599,7 +1609,7 @@ if (isMobile) {
         runningReplay = false;
         gameOverCount = 0;
         running = false;
-        initPro()
+        initPro();
         makeInitialFood();
         animate();
 
@@ -1620,15 +1630,16 @@ if (isMobile) {
 
         food.forEach(item => scene.remove(item.cube));
         star.removeTimer();
+        trace = [];
         viewReplayEngine();
 
     });
 
     webgl.addEventListener('mousedown', () => {
-        isIncreasable = !(frameBufferCount < 600 && frameBufferCount > 250);
+        isIncrease = !(frameBufferCount < 600 && frameBufferCount > 250);
     })
 
-    webgl.addEventListener('mouseup', () => { isIncreasable = false; });
+    webgl.addEventListener('mouseup', () => { isIncrease = false; });
 
     // Add event listener for the save button
     saveSettingsButton.addEventListener('click', function() {
@@ -1669,3 +1680,14 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 initPro();
 mainEngine();
+
+
+
+
+function startDrag(event) {
+    event.preventDefault();
+}
+
+function resetJoystick() {
+    joystickInner.style.transform = 'translate(-50%, -50%)'; // Resets to center
+}

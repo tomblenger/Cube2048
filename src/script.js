@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
-
+import nipplejs from 'nipplejs';
 
 const saveSettingsButton = document.getElementById('saveSettingsButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -9,14 +9,20 @@ const settingsForm = document.getElementById('settingsForm');
 const playerName = document.getElementById("playerName");
 const controllerCanvas = document.getElementById('controllerCanvas');
 const customAlert = document.getElementById("customAlert");
-const desktopMode = document.getElementById("com");
-const mobileMode = document.getElementById("phone");
+// const desktopMode = document.getElementById("com");
+// const mobileMode = document.getElementById("phone");
 const cancelButton = document.getElementById('closeSettingsButton');
 const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
 const ctx = controllerCanvas.getContext('2d');
 const style = document.getElementById('colorStyle');
 
+const joystick = nipplejs.create({
+    zone: document.getElementById("joystick-container"),
+    mode: "dynamic", // Joystick appears where the user touches
+    color: "blue",
+    size: 100
+});
 
 const PERSON = 0;
 const FOOD = 1;
@@ -139,8 +145,8 @@ let frameBufferCount = 0;
 
 var trace = [];
 
-let innerCircleX = controllerCanvas.width / 2;
-let innerCircleY = controllerCanvas.height / 2;
+// let innerCircleX = controllerCanvas.width / 2;
+// let innerCircleY = controllerCanvas.height / 2;
 
 let touchSize = {
     width: 300,
@@ -746,6 +752,7 @@ class Cube {
         this.timerGeometry.dispose();
         this.timerGeometry.copy(new THREE.RingGeometry(0, this.sizeDef / 4, 64, 1, 0, angle)); // Adjust sector
     }
+
     removeTimer() {
         scene.remove(this.clock);
     }
@@ -887,7 +894,6 @@ function makeBot() {
     }
 }
 
-
 function lightControl() {
     const lightPositions = [
         [0, 300, 200],
@@ -1007,7 +1013,6 @@ function initPro() {
     addPlane();
     drawX();
 }
-
 
 function updateTable(person, bots) {
     if (cycleTable < TIME_SPACE_TABLE) {
@@ -1130,7 +1135,8 @@ function drawArrow(x, y, direction, arrowSize = 25) {
 }
 
 function detectDevice() {
-    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    return ('ontouchstart' in window || navigator.maxTouchPoints > 0) && width < 1024;
 }
 
 function animate() {
@@ -1301,11 +1307,33 @@ function removeAll() {
     }
 }
 
+function enterFullscreen() {
+    let elem = document.documentElement; // Fullscreen the entire page
+
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+        elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+        elem.msRequestFullscreen();
+    }
+}
+
+// Automatically enter fullscreen on load
+window.addEventListener('load', () => {
+    setTimeout(enterFullscreen, 1000); // Delay to ensure page is fully loaded
+});
+
 //----------------------------------------start pro--------------------------------------------//
 
+console.log("DEVICE", detectDevice())
 if (detectDevice()) {
     isMobile = true;
-    controllerCanvas.style.display = 'block';
+    // Handle joystick movement
+
+    // controllerCanvas.style.display = 'block';
     console.log("Mobile detected: Enable joystick.");
     // Initialize joystick controls
 } else {
@@ -1314,219 +1342,246 @@ if (detectDevice()) {
     // Use keyboard or mouse controls
 }
 
-window.onload = function() {
-    drawController();
-};
+// window.onload = function() {
+//     drawController();
+// };
 
-document.addEventListener('mouseup', () => {
-    isDragging = false;
-});
 
-document.addEventListener('mousemove', (event) => {
-    if (!star) return;
-    nameText.rotation.z = -star.cube.rotation.z;
 
-    canvasPos = getElementPositions(webgl);
+// controllerCanvas.addEventListener('mousedown', (event) => {
+//     const mouseX = event.offsetX;
+//     const mouseY = event.offsetY;
 
-    const deltaSize = {
-        width: -currentControllerPos.x + outerRadius,
-        height: -currentControllerPos.y + outerRadius
-    };
-    if (isMobile) {
-        if (controllable && isDragging) {
-            const dx = currentControllerPos.x - event.clientX;
-            const dy = currentControllerPos.y - event.clientY;
-            const calRadius = (dx * dx + dy * dy);
+//     const dx = mouseX - innerCircleX;
+//     const dy = mouseY - innerCircleY;
 
-            if (calRadius < outerRadius * outerRadius && touchSize.width) {
-                mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
-                mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
-                mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
-            }
-        }
-    } else {
-        if (sizes.width && sizes.height) {
-            mouse.x = (event.clientX / sizes.width) * 2 - 1;
-            mouse.delta = 1 - (event.clientX / sizes.width) * 2;
-            mouse.y = -(event.clientY / sizes.height) * 2 + 1;
-        }
-    }
-});
+//     if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
+//         isDragging = true;
+//     }
+// });
 
-document.getElementById("closeAlert").addEventListener("click", function() {
-    document.getElementById("customAlert").style.display = 'none';
-    removeAll();
-    runningReplay = false;
-    gameOverCount = 0;
-    running = false;
-    initPro()
-    makeInitialFood();
-    animate();
+// controllerCanvas.addEventListener('mousemove', (event) => {
+//     if (isDragging) {
+//         const mouseX = event.offsetX;
+//         const mouseY = event.offsetY;
 
-    gameForm.style.display = "block";
-});
+//         const dx = mouseX - controllerCanvas.width / 2;
+//         const dy = mouseY - controllerCanvas.height / 2;
 
-document.getElementById("viewReplay").addEventListener("click", function() {
-    document.getElementById("customAlert").style.display = 'none';
-    scene.remove(star.cube);
+//         // Calculate the distance between the center and the mouse position
+//         const distance = Math.sqrt(dx * dx + dy * dy);
 
-    star.tail.forEach((item) => scene.remove(item.cube));
-    star.newtail.forEach(item => scene.remove(item.cube));
+//         // If the distance is less than or equal to the outer circle radius, move the inner circle
+//         if (distance <= outerRadius - innerRadius) {
+//             innerCircleX = mouseX;
+//             innerCircleY = mouseY;
+//         } else {
+//             // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
+//             const angle = Math.atan2(dy, dx);
+//             innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
+//             innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
+//         }
 
-    bots.forEach(bot => {
-        scene.remove(bot.cube);
-        bot.tail.forEach((item) => scene.remove(item.cube));
-    });
+//         // Redraw the controller with the updated inner circle position
+//         drawController(innerCircleX, innerCircleY);
+//     }
+// });
 
-    food.forEach(item => scene.remove(item.cube));
-    viewReplayEngine();
+// controllerCanvas.addEventListener('dblclick', () => {
+//     controllerControl = !controllerControl;
 
-});
+//     if (controllerControl) {
+//         window.addEventListener('mousemove', handleMouseDown)
 
-controllerCanvas.addEventListener('mousedown', (event) => {
-    const mouseX = event.offsetX;
-    const mouseY = event.offsetY;
-
-    const dx = mouseX - innerCircleX;
-    const dy = mouseY - innerCircleY;
-
-    if (Math.sqrt(dx * dx + dy * dy) <= innerRadius) {
-        isDragging = true;
-    }
-});
-
-controllerCanvas.addEventListener('mousemove', (event) => {
-    if (isDragging) {
-        const mouseX = event.offsetX;
-        const mouseY = event.offsetY;
-
-        const dx = mouseX - controllerCanvas.width / 2;
-        const dy = mouseY - controllerCanvas.height / 2;
-
-        // Calculate the distance between the center and the mouse position
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // If the distance is less than or equal to the outer circle radius, move the inner circle
-        if (distance <= outerRadius - innerRadius) {
-            innerCircleX = mouseX;
-            innerCircleY = mouseY;
-        } else {
-            // If the distance exceeds the boundary, set the inner circle at the maximum allowed distance
-            const angle = Math.atan2(dy, dx);
-            innerCircleX = controllerCanvas.width / 2 + (outerRadius - innerRadius) * Math.cos(angle);
-            innerCircleY = controllerCanvas.height / 2 + (outerRadius - innerRadius) * Math.sin(angle);
-        }
-
-        // Redraw the controller with the updated inner circle position
-        drawController(innerCircleX, innerCircleY);
-    }
-});
-
-controllerCanvas.addEventListener('dblclick', () => {
-    controllerControl = !controllerControl;
-
-    if (controllerControl) {
-        window.addEventListener('mousemove', handleMouseDown)
-
-    } else {
-        window.removeEventListener('mousemove', handleMouseDown);
-    }
-})
+//     } else {
+//         window.removeEventListener('mousemove', handleMouseDown);
+//     }
+// })
 
 // Named function for the mousedown event
-function handleMouseDown(event) {
-    let bufPos = { x: 0, y: 0 };
-    bufPos.x = event.clientX;
-    bufPos.y = event.clientY;
-    let bottom = window.innerHeight - bufPos.y - outerRadius;
-    let right = window.innerWidth - bufPos.x - outerRadius;
-    controllerCanvas.style.bottom = `${bottom}px`;
-    controllerCanvas.style.right = `${right}px`;
 
-    currentControllerPos.x = bufPos.x;
-    currentControllerPos.y = bufPos.y;
-    return currentControllerPos;
-}
+// function handleMouseDown(event) {
+//     let bufPos = { x: 0, y: 0 };
+//     bufPos.x = event.clientX;
+//     bufPos.y = event.clientY;
+//     let bottom = window.innerHeight - bufPos.y - outerRadius;
+//     let right = window.innerWidth - bufPos.x - outerRadius;
+//     controllerCanvas.style.bottom = `${bottom}px`;
+//     controllerCanvas.style.right = `${right}px`;
 
+//     currentControllerPos.x = bufPos.x;
+//     currentControllerPos.y = bufPos.y;
+//     return currentControllerPos;
+// }
 
+// controllerCanvas.addEventListener('mouseleave', () => {
+//     isDragging = false;
+//     drawController()
+// });
 
-controllerCanvas.addEventListener('mouseleave', () => {
-    isDragging = false;
-    drawController()
-});
+// controllerCanvas.addEventListener('mousedown', () => {
+//     controllable = true;
+// });
 
-controllerCanvas.addEventListener('mousedown', () => {
-    controllable = true;
-});
+// controllerCanvas.addEventListener('mouseup', () => {
+//     drawController();
+// })
 
-controllerCanvas.addEventListener('mouseup', () => {
-    drawController();
-})
+if (isMobile) {
+    joystick.on("move", (event, data) => {
+        const { angle, force } = data;
+        console.log(`Angle: ${angle.degree}, Force: ${force}`);
 
-webgl.addEventListener('mousedown', () => {
-    if (frameBufferCount < 600 && frameBufferCount > 250) {
+        // Convert angle to movement
+        const radian = (angle.degree * Math.PI) / 180;
+        const speed = force * 0.05;
+
+        // Example: Move a player object in Three.js
+        // player.position.x += Math.cos(radian) * speed;
+        // player.position.z -= Math.sin(radian) * speed;
+    });
+
+    // Detect when joystick is released
+    joystick.on("end", () => {
+        console.log("Joystick released");
+    });
+} else {
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    document.addEventListener('mousemove', (event) => {
+        if (!star) return;
+        nameText.rotation.z = -star.cube.rotation.z;
+
+        canvasPos = getElementPositions(webgl);
+
+        const deltaSize = {
+            width: -currentControllerPos.x + outerRadius,
+            height: -currentControllerPos.y + outerRadius
+        };
+        if (isMobile) {
+            if (controllable && isDragging) {
+                const dx = currentControllerPos.x - event.clientX;
+                const dy = currentControllerPos.y - event.clientY;
+                const calRadius = (dx * dx + dy * dy);
+
+                if (calRadius < outerRadius * outerRadius && touchSize.width) {
+                    mouse.x = (event.clientX + deltaSize.width) / touchSize.width * 2 - 1;
+                    mouse.delta = 1 - (event.clientX + deltaSize.width) / touchSize.width * 2;
+                    mouse.y = -(event.clientY + deltaSize.height) / touchSize.width * 2 + 1;
+                }
+            }
+        } else {
+            if (sizes.width && sizes.height) {
+                mouse.x = (event.clientX / sizes.width) * 2 - 1;
+                mouse.delta = 1 - (event.clientX / sizes.width) * 2;
+                mouse.y = -(event.clientY / sizes.height) * 2 + 1;
+            }
+        }
+    });
+
+    document.getElementById("closeAlert").addEventListener("click", function() {
+        document.getElementById("customAlert").style.display = 'none';
+        removeAll();
+        runningReplay = false;
+        gameOverCount = 0;
+        running = false;
+        initPro()
+        makeInitialFood();
+        animate();
+
+        gameForm.style.display = "block";
+    });
+
+    document.getElementById("viewReplay").addEventListener("click", function() {
+        document.getElementById("customAlert").style.display = 'none';
+        scene.remove(star.cube);
+
+        star.tail.forEach((item) => scene.remove(item.cube));
+        star.newtail.forEach(item => scene.remove(item.cube));
+
+        bots.forEach(bot => {
+            scene.remove(bot.cube);
+            bot.tail.forEach((item) => scene.remove(item.cube));
+        });
+
+        food.forEach(item => scene.remove(item.cube));
+        viewReplayEngine();
+
+    });
+
+    webgl.addEventListener('mousedown', () => {
+        if (frameBufferCount < 600 && frameBufferCount > 250) {
+            isIncreasable = false;
+        } else isIncreasable = true;
+    })
+
+    webgl.addEventListener('mouseup', () => {
+        controllable = false;
         isIncreasable = false;
-    } else isIncreasable = true;
-})
 
-webgl.addEventListener('mouseup', () => {
-    controllable = false;
-    isIncreasable = false;
+    });
 
-});
+    settingsButton.addEventListener('click', () => {
+        openForm = !openForm;
+        if (openForm) {
+            settingsForm.classList.remove('hidden');
+            settingsForm.classList.add('block');
+        } else {
+            settingsForm.classList.remove('block');
+            settingsForm.classList.add('hidden');
+        }
+    });
+
+    // Add event listener for the save button
+    saveSettingsButton.addEventListener('click', function() {
+        // Get the current value of the settings
+        // distance = distanceSlider.value; // get the updated distance value
+        colorStyle = style.value;
+
+        difficulty = document.getElementById('difficulty').value;
+        settingsForm.classList.remove('block');
+        settingsForm.classList.add('hidden');
+    });
+
+    cancelButton.addEventListener('click', () => {
+        settingsForm.classList.remove('block');
+        settingsForm.classList.add('hidden');
+    })
+
+    gameForm.addEventListener("submit", function(event) {
+        try {
+            event.preventDefault(); // Prevent the default form submission
+            cubeName = playerName.value;
+            // if (desktopMode.checked) {
+            //     touch = false;
+            // } else if (mobileMode.checked) {
+            //     touch = true;
+            // }
+            gameForm.style.display = "none";
+            document.addEventListener("click", startGame, { once: true });
+        } catch (err) {}
+    });
+}
 
 function startGame() {
     running = true;
     animate();
 }
 
-settingsButton.addEventListener('click', () => {
-    openForm = !openForm;
-    if (openForm) {
-        settingsForm.classList.remove('hidden');
-        settingsForm.classList.add('block');
-    } else {
-        settingsForm.classList.remove('block');
-        settingsForm.classList.add('hidden');
-    }
-});
 
-// Add event listener for the save button
-saveSettingsButton.addEventListener('click', function() {
-    // Get the current value of the settings
-    // distance = distanceSlider.value; // get the updated distance value
-    colorStyle = style.value;
-
-    difficulty = document.getElementById('difficulty').value;
-    settingsForm.classList.remove('block');
-    settingsForm.classList.add('hidden');
-});
-
-cancelButton.addEventListener('click', () => {
-    settingsForm.classList.remove('block');
-    settingsForm.classList.add('hidden');
-})
-
-gameForm.addEventListener("submit", function(event) {
-    try {
-        event.preventDefault(); // Prevent the default form submission
-        cubeName = playerName.value;
-        // if (desktopMode.checked) {
-        //     touch = false;
-        // } else if (mobileMode.checked) {
-        //     touch = true;
-        // }
-        gameForm.style.display = "none";
-        document.addEventListener("click", startGame, { once: true });
-    } catch (err) {}
-});
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
-renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for more natural results
+
+
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+// Use ACES tone mapping for more natural results
+
 
 initPro();
 mainEngine();

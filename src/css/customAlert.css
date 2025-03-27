@@ -175,3 +175,32 @@
         font-size: 50px;
     }
 }
+
+
+/* 
+#controllerCanvas {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    z-index: 100;
+    display: none
+} */
+
+
+/* #joystick-container { */
+
+
+/* position: absolute;
+    bottom: 10%;
+    left: 5%;
+    background-color: transparent;
+    width: 150px;
+    height: 150px; */
+
+
+/* z-index: 150000; */
+
+
+/* } */

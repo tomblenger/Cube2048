@@ -15,7 +15,7 @@
 
     <div id="canvas-container">
         <!-- Three.js Canvas will be placed here -->
-        <canvas class="webgl relative w-md" id="webgl" style="z-index: 10;"></canvas>
+        <canvas class="webgl absolute" id="webgl" style="z-index: 0;"></canvas>
 
         <!-- Game Input Form -->
         <form onsubmit="event.preventDefault()" id="game-form" class="w-full text-center">
@@ -116,7 +116,12 @@
         </div>
     </div>
 
-    <canvas id="controllerCanvas" width="200" height="200" style="position: absolute; bottom: 0px; left: 0px; z-index: 100; display: none;"></canvas>
+
+    <div id="joystick-container">
+        <canvas id="controllerCanvas" style="position: absolute; bottom: 0px; left: 0px; z-index: 100; display: none;">
+        </canvas>
+    </div>
+
     <script type="module" src="./script.js"></script>
 </body>
 

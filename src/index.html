@@ -7,6 +7,7 @@
     <title>2048 Cubic</title>
     <link rel="stylesheet" href="css/customAlert.css">
     <link rel="stylesheet" href="css/startForm.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100">
@@ -22,7 +23,7 @@
                 <div id="userIcon" class="w-5">
                     <img src="https://cdn-icons-png.flaticon.com/512/847/847969.png" alt="User">
                 </div>
-                <input type="text" id="playerName" class="w-48" placeholder="Enter Your Name" required />
+                <input type="text" id="playerName" class="" placeholder="Enter Your Name" required />
             </div>
 
             <br />
@@ -48,7 +49,7 @@
     </div>
 
     <div class="absolute top-5 left-5">
-        <button id="settingsButton" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-md hover:bg-gray-700">⚙️ Settings</button>
+        <button id="settingsButton" class="bg-gray-800 text-white px-4 py-2 rounded-full shadow-md hover:bg-gray-700" style="z-index: 100">⚙️ Settings</button>
     </div>
 
     <!-- Settings Form (Elegant) -->
@@ -114,7 +115,7 @@
         </div>
     </div>
 
-    <audio id="myAudio" controls>
+    <audio id="myAudio" controls style="display: none;">
         <source src="sound.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>

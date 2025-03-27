@@ -17,12 +17,12 @@ const gameForm = document.getElementById("game-form");
 const ctx = controllerCanvas.getContext('2d');
 const style = document.getElementById('colorStyle');
 
-const joystick = nipplejs.create({
-    zone: document.getElementById("joystick-container"),
-    mode: "dynamic", // Joystick appears where the user touches
-    color: "blue",
-    size: 100
-});
+// const joystick = nipplejs.create({
+//     zone: document.getElementById("joystick-container"),
+//     mode: "dynamic", // Joystick appears where the user touches
+//     color: "blue",
+//     size: 100
+// });
 
 const PERSON = 0;
 const FOOD = 1;
@@ -1372,6 +1372,17 @@ function removeAll() {
     }
 }
 
+function toggleSetting() {
+    openForm = !openForm;
+    if (openForm) {
+        settingsForm.classList.remove('hidden');
+        settingsForm.classList.add('block');
+    } else {
+        settingsForm.classList.remove('block');
+        settingsForm.classList.add('hidden');
+    }
+}
+
 function enterFullscreen() {
     let elem = document.documentElement; // Fullscreen the entire page
 
@@ -1497,24 +1508,30 @@ window.onload = function() {
     //     drawController();
     // })
 
+
+
+    settingsButton.addEventListener('click', toggleSetting);
+    settingsButton.addEventListener('touchstart', toggleSetting);
+    settingsButton.addEventListener('touchend', toggleSetting);
+
     if (isMobile) {
-        joystick.on("move", (event, data) => {
-            const { angle, force } = data;
-            console.log(`Angle: ${angle.degree}, Force: ${force}`);
+        // joystick.on("move", (event, data) => {
+        //     const { angle, force } = data;
+        //     console.log(`Angle: ${angle.degree}, Force: ${force}`);
 
-            // Convert angle to movement
-            const radian = (angle.degree * Math.PI) / 180;
-            const speed = force * 0.05;
+        //     // Convert angle to movement
+        //     const radian = (angle.degree * Math.PI) / 180;
+        //     const speed = force * 0.05;
 
-            // Example: Move a player object in Three.js
-            // player.position.x += Math.cos(radian) * speed;
-            // player.position.z -= Math.sin(radian) * speed;
-        });
+        //     // Example: Move a player object in Three.js
+        //     // player.position.x += Math.cos(radian) * speed;
+        //     // player.position.z -= Math.sin(radian) * speed;
+        // });
 
-        // Detect when joystick is released
-        joystick.on("end", () => {
-            console.log("Joystick released");
-        });
+        // // Detect when joystick is released
+        // joystick.on("end", () => {
+        //     console.log("Joystick released");
+        // });
     } else {
         document.addEventListener('mouseup', () => {
             isDragging = false;
@@ -1597,16 +1614,6 @@ window.onload = function() {
 
     });
 
-    settingsButton.addEventListener('click', () => {
-        openForm = !openForm;
-        if (openForm) {
-            settingsForm.classList.remove('hidden');
-            settingsForm.classList.add('block');
-        } else {
-            settingsForm.classList.remove('block');
-            settingsForm.classList.add('hidden');
-        }
-    });
 
     // Add event listener for the save button
     saveSettingsButton.addEventListener('click', function() {

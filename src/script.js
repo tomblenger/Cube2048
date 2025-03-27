@@ -7,7 +7,6 @@ const saveSettingsButton = document.getElementById('saveSettingsButton');
 const settingsButton = document.getElementById('settingsButton');
 const settingsForm = document.getElementById('settingsForm');
 const playerName = document.getElementById("playerName");
-const controllerCanvas = document.getElementById('controllerCanvas');
 const customAlert = document.getElementById("customAlert");
 const cancelButton = document.getElementById('closeSettingsButton');
 const webgl = document.getElementById('webgl');
@@ -45,7 +44,6 @@ const maxHeight = sizes.height * 2;
 const screenScale = 200;
 const maxScaledWidth = maxWidth / screenScale;
 const maxScaledHeight = maxHeight / screenScale;
-const audioContext = new(window.AudioContext || window.webkitAudioContext)();
 
 const scaledSize = {
     width: sizes.width / screenScale * 2,
@@ -102,7 +100,7 @@ let cubeName = "PPP";
 let colorStyle = 'style1';
 let difficulty = "easy";
 let threeAngle;
-let isMobile = false;
+let isMobile;
 let isIncreasable = false;
 let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
@@ -132,7 +130,6 @@ let gameOverCount = 0;
 let frameBufferCount = 0;
 let trace = [];
 let isPlaying = false;
-let source = null; // Global variable for the current audio source
 let joystick;
 
 
@@ -144,46 +141,6 @@ function playAudio(cubeType) {
         audioElement.play();
         isPlaying = false;
     }
-}
-
-function pauseAudio() {
-    audioElement.pause();
-}
-
-function replayAudio() {
-    audioElement.currentTime = 0; // Reset to the beginning
-    audioElement.play(); // Play the audio again
-}
-
-function playSound() {
-    // If a sound is already playing, stop it before starting a new one
-    if (source) {
-        source.stop();
-    }
-
-    // Fetch and decode the audio file
-    fetch("sound.mp3")
-        .then(response => response.arrayBuffer())
-        .then(data => audioContext.decodeAudioData(data))
-        .then(buffer => {
-            // Create a new source for the sound
-            source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            source.start(1000);
-
-            // Optionally, restart the sound when it ends
-            source.onended = () => {
-                playSound(); // Automatically restart when the sound finishes
-            };
-        })
-        .catch(error => {
-            console.error('Error playing the sound:', error)
-        });
-}
-
-function restartSound() {
-    playSound(); // This will restart the sound
 }
 
 function isPointInRectangle(px, py, rect) {
@@ -228,9 +185,9 @@ function isLineIntersecting(ax, ay, bx, by, cx, cy, dx, dy) {
     if (o1 === 0 && onSegment(ax, ay, bx, by, cx, cy)) return true;
     if (o2 === 0 && onSegment(ax, ay, bx, by, dx, dy)) return true;
     if (o3 === 0 && onSegment(cx, cy, dx, dy, ax, ay)) return true;
-    if (o4 === 0 && onSegment(cx, cy, dx, dy, bx, by)) return true;
+    return !!(o4 === 0 && onSegment(cx, cy, dx, dy, bx, by));
 
-    return false;
+
 }
 
 function isLineRectangleOverlapping(line, rect) {
@@ -251,14 +208,6 @@ function isLineRectangleOverlapping(line, rect) {
     ];
 
     return edges.some(edge => isLineIntersecting(px1, py1, px2, py2, ...edge));
-}
-
-function getElementPositions(element) {
-    const rect = element.getBoundingClientRect();
-    return {
-        width: rect.right + window.scrollX,
-        height: rect.bottom + window.scrollY
-    };
 }
 
 function getColor(size) {
@@ -316,7 +265,6 @@ class Cube {
         this.count = 0;
         this.direction = RAND;
         this.newtail = [];
-        this.mergeCount = 0;
 
         this.next = {
             x: 0,
@@ -338,7 +286,7 @@ class Cube {
         this.geometry = new RoundedBoxGeometry(this.sizeDef, this.sizeDef, this.sizeDef, 3, 0.05);
         this.scale = 1;
         for (let i = 0; i < this.count; i++) this.scale *= 1.05;
-        this.color = getColor(this.size) | colorStyle === 'style1' ? color1[0] : colorStyle === 'style2' ? color2[0] : color3[0];
+        this.color = getColor(this.size) || colorStyle === 'style1' ? color1[0] : colorStyle === 'style2' ? color2[0] : color3[0];
         this.material = new THREE.MeshStandardMaterial({ color: this.color, roughness: false });
 
         this.cube = new THREE.Mesh(this.geometry, this.material);
@@ -486,7 +434,6 @@ class Cube {
     eatFoodAround() {
         let deltaX = 0,
             deltaY = 0;
-        let alpha = 0;
         let bCrash = false;
         let bOverlap = false;
         food.forEach((monster, i) => {
@@ -549,7 +496,6 @@ class Cube {
     eatBotAround() {
         let deltaX = 0,
             deltaY = 0;
-        let alpha = 0;
         let bCrash = false;
         let bOverlap = false;
 
@@ -640,7 +586,7 @@ class Cube {
                                 scene.remove(bot.tail[k].text);
                             }
 
-                            eatBuf.forEach((item, i) => {
+                            eatBuf.forEach(item => {
                                 this.connectTail(item);
                                 this.setPos();
                                 item.eat = true;
@@ -1518,11 +1464,7 @@ function toggleSetting() {
 
 //----------------------------------------start pro--------------------------------------------//
 
-if (detectDevice()) {
-    isMobile = true;
-} else {
-    isMobile = false;
-}
+isMobile = detectDevice();
 
 settingsButton.addEventListener('click', toggleSetting);
 settingsButton.addEventListener('touchstart', toggleSetting);
@@ -1668,9 +1610,7 @@ if (isMobile) {
     });
 
     webgl.addEventListener('mousedown', () => {
-        if (frameBufferCount < 600 && frameBufferCount > 250) {
-            isIncreasable = false;
-        } else isIncreasable = true;
+        isIncreasable = !(frameBufferCount < 600 && frameBufferCount > 250);
     })
 
     webgl.addEventListener('mouseup', () => { isIncreasable = false; });
@@ -1694,15 +1634,15 @@ if (isMobile) {
             event.preventDefault(); // Prevent the default form submission
             cubeName = playerName.value;
             gameForm.style.display = "none";
-            document.addEventListener("click", startGame, { once: true });
+            document.addEventListener("click", startsGame, { once: true });
         } catch (err) {}
     });
 
-    function startGame() {
+    function startsGame() {
         running = true;
         animate();
     }
-};
+}
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');

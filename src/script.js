@@ -45,13 +45,14 @@ let colorStyle = 'style1';
 let difficulty = "easy";
 let threeAngle;
 let touch = false;
+let isMobile = false;
 let controllable = false;
 let isIncreasable = false;
 let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
 let openForm = false;
 let isDragging = false;
-let currentControllerPos = { x: window.innerWidth - 97, y: window.innerHeight - 97 };
+let currentControllerPos = { x: 97, y: window.innerHeight - 97 };
 let canvasPos = {
     width: 400,
     height: 400,
@@ -131,7 +132,6 @@ let running = true;
 let bufFood = [];
 let bufBots = [];
 let tailBuf = null;
-let eatTailBuf = null;
 let mouseCount = 0;
 let gameOverCount = 0;
 let controllerControl = false;
@@ -237,8 +237,6 @@ class Cube {
         this.cube = new THREE.Mesh(this.geometry, this.material);
         this.cube.scale.set(this.scale, this.scale, this.scale);
 
-        ////////////////////////////////////////// Clock
-
         // Create Full Clock Background
         this.clockGeometry = new THREE.CircleGeometry(this.sizeDef / 3, 64);
         this.clockMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: true, transparent: true });
@@ -251,9 +249,6 @@ class Cube {
         this.timerMesh.rotation.z = Math.PI / 2;
         this.clock.add(this.timerMesh);
         this.timerMesh.position.z = 0.001
-
-
-        ////////////////////////////////////////////////
 
         if (this.type === PERSON) {
             this.pos = [0, 0, 0];
@@ -320,8 +315,8 @@ class Cube {
         // this.clockFace.position.set(pos[0], pos[1], 1);
 
         const textPosZ = this.sizeDef - 0.199;
-        let textPosX = -this.sizeDef / 2.2;
-        let textPosY = this.sizeDef / 2.8;
+        let textPosX;
+        let textPosY;
 
         if (this.size < 10) {
             textPosX = this.sizeDef / 2.8;
@@ -333,7 +328,7 @@ class Cube {
             textPosX = this.sizeDef / 2.8;
             textPosY = this.sizeDef / 2.2;
         } else {
-            textPosX = this.sizeDef / 2.8;
+            textPosX = this.sizeDef / 1.8;
             textPosY = this.sizeDef / 2.2
         }
 
@@ -494,14 +489,14 @@ class Cube {
 
     setStarBuffer() {
         this.ref = (mouse.x === 0 && mouse.y === 0) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-        if(this.bufPos.length < 15) {
+        if (this.bufPos.length < 15) {
             this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
             this.bufPos.push([...this.pos]);
         } else {
             let buf = this.bufPos[this.bufPos.length - 1];
             let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
             console.log(distance);
-            if(distance > 0.0004) {
+            if (distance > 0.0004) {
                 this.edge = distance <= 0.0006;
                 this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
                 this.bufPos.push([...this.pos]);
@@ -543,7 +538,7 @@ class Cube {
             const currentTail = this.tail[i];
             const prevTail = this.tail[i - 1];
             if (i === 0) {
-                if(this.eatToHeadCount > EAT_COUNT) {
+                if (this.eatToHeadCount > EAT_COUNT) {
                     if (currentTail.size === this.size) {
                         scene.remove(currentTail.cube);
                         scene.remove(currentTail.text);
@@ -566,7 +561,7 @@ class Cube {
                         return;
                     }
                     this.eatToHeadCount = 0;
-                } else this.eatToHeadCount ++;
+                } else this.eatToHeadCount++;
             } else if (currentTail.size === prevTail.size) {
                 if (this.eatCount > EAT_COUNT) {
                     scene.remove(currentTail.cube);
@@ -578,7 +573,7 @@ class Cube {
                     len--;
                     return;
                 } else {
-                    this.eatCount ++;
+                    this.eatCount++;
                 }
             }
             i--;
@@ -593,7 +588,7 @@ class Cube {
             let traceHis;
 
             if (mouseCount === 0) {
-                if(this.edge) traceHis = this.size < 100 ? 16 : 17;
+                if (this.edge) traceHis = this.size < 100 ? 16 : 17;
                 else traceHis = this.size < 100 ? 13 : 14;
             }
 
@@ -1142,6 +1137,10 @@ function drawArrow(x, y, direction, arrowSize = 25) {
     ctx.fill();
 }
 
+function detectDevice() {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
@@ -1314,6 +1313,17 @@ function removeAll() {
 
 //----------------------------------------start pro--------------------------------------------//
 
+if (detectDevice()) {
+    isMobile = true;
+    controllerCanvas.style.display = 'block';
+    console.log("Mobile detected: Enable joystick.");
+    // Initialize joystick controls
+} else {
+    isMobile = false;
+    console.log("Desktop detected: Use keyboard/mouse.");
+    // Use keyboard or mouse controls
+}
+
 window.onload = function() {
     drawController();
 };
@@ -1332,7 +1342,7 @@ document.addEventListener('mousemove', (event) => {
         width: -currentControllerPos.x + outerRadius,
         height: -currentControllerPos.y + outerRadius
     };
-    if (touch) {
+    if (isMobile) {
         if (controllable && isDragging) {
             const dx = currentControllerPos.x - event.clientX;
             const dy = currentControllerPos.y - event.clientY;
@@ -1449,6 +1459,8 @@ function handleMouseDown(event) {
     return currentControllerPos;
 }
 
+
+
 controllerCanvas.addEventListener('mouseleave', () => {
     isDragging = false;
     drawController()
@@ -1466,13 +1478,11 @@ webgl.addEventListener('mousedown', () => {
     if (frameBufferCount < 600 && frameBufferCount > 250) {
         isIncreasable = false;
     } else isIncreasable = true;
-    console.log("ISINCRESEABLE", isIncreasable)
 })
 
 webgl.addEventListener('mouseup', () => {
     controllable = false;
     isIncreasable = false;
-    console.log("ISINCRESEABLE", isIncreasable)
 
 });
 
@@ -1512,11 +1522,11 @@ gameForm.addEventListener("submit", function(event) {
     try {
         event.preventDefault(); // Prevent the default form submission
         cubeName = playerName.value;
-        if (desktopMode.checked) {
-            touch = false;
-        } else if (mobileMode.checked) {
-            touch = true;
-        }
+        // if (desktopMode.checked) {
+        //     touch = false;
+        // } else if (mobileMode.checked) {
+        //     touch = true;
+        // }
         gameForm.style.display = "none";
         document.addEventListener("click", startGame, { once: true });
     } catch (err) {
@@ -1533,23 +1543,3 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; // Use ACES tone mapping for
 
 initPro();
 mainEngine();
-
-
-
-
-// // Timer Countdown Logic
-// let duration = 10; // 10 seconds
-// let startTime = Date.now();
-
-// function updateTimer() {
-//     let elapsed = (Date.now() - startTime) / 1000;
-//     let progress = elapsed / duration;
-
-//     if (progress > 1) progress = 1; // Stop at 100%
-
-//     let angle = Math.PI * 2 * (1 - progress); // Shrinking sector
-//     timerGeometry.dispose();
-//     timerGeometry.copy(new THREE.RingGeometry(0, 2.5, 64, 1, 0, angle)); // Adjust sector
-
-//     clockHand.rotation.z = -angle; // Move hand with timer
-// }

@@ -440,6 +440,7 @@ input {
 }
 
 body {
+    position: absolute;
     background-color: #0f1b30;
     font-family: Arial, sans-serif;
     color: #ccc;

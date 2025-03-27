@@ -25,8 +25,8 @@ const TIME_SPACE_BOT = 100;
 const TIME_SPACE_TABLE = 200;
 const MAX_BOT = 20;
 const MAX_INIT_FOOD = 30;
-const MAX_FOOD = 40;
-const TIME_SPACE_FOOD = 40;
+const MAX_FOOD = 1000;
+const TIME_SPACE_FOOD = 100;
 const EAT_COUNT = 35;
 
 const SIZE = 0;
@@ -281,9 +281,10 @@ function randomizePosition(max) {
 
 function deleteFromArray(arr, index) {
     let halfBefore, halfAfter;
-    scene.remove(arr[index].cube.cube)
+    // scene.remove(arr[index].cube);
     halfBefore = arr.slice(0, index);
-    if ((index + 1) < arr.length) halfAfter = arr.slice(index + 1, arr.length);
+    // if ((index + 1) < arr.length) halfAfter = arr.slice(index + 1, arr.length);
+    if (index < arr.length) halfAfter = arr.slice(index + 1, arr.length);
     else halfAfter = [];
     let buf = arr[index] && arr[index].tail && arr[index].tail.length;
 
@@ -439,10 +440,13 @@ class Cube {
         }
 
         this.text.position.set(textPosX, textPosY, textPosZ);
+
+        this.setCornerPosition();
     }
 
     setAngle(angle) {
         this.cube.rotation.z = angle;
+        this.setCornerPosition();
         // if(this.type === PERSON) console.log(this.cube.rotation.z);
     }
 
@@ -459,6 +463,7 @@ class Cube {
 
     connectTail(children) {
         this.tail.push(children);
+        children.eat = false;
     }
 
     eatPlayerAround(player) {
@@ -512,7 +517,7 @@ class Cube {
                 if (monster.size <= this.size) {
                     monster.eat = true;
                     playAudio(this.type);
-                    scene.remove(monster.cube);
+                    scene.remove(food[i].cube);
                     tailBuf = new Cube(TAIL, INITIAL);
                     tailBuf.create();
                     while (true) {
@@ -576,8 +581,8 @@ class Cube {
                 if (bCrash) {
                     if (monster.size < this.size) {
                         playAudio(this.type);
-                        scene.remove(monster.cube);
-                        scene.remove(monster.text);
+                        scene.remove(bots[i].cube);
+                        scene.remove(bots[i].text);
                         tailBuf = new Cube(TAIL, INITIAL);
                         tailBuf.create();
                         while (true) {
@@ -999,7 +1004,7 @@ function addPlane() {
     const height = maxScaledHeight * 2 + 0.5;
 
     // Initialize Fog before adding objects
-    scene.fog = new THREE.FogExp2(0xdddddd, 0.08);
+    // scene.fog = new THREE.FogExp2(0xdddddd, 0.08);
 
     // Create Plane
     const geometry = new THREE.PlaneGeometry(width, height);
@@ -1084,6 +1089,7 @@ function makeFood(size = 2) {
 
     cycleFood = 0;
 
+    // if (star.size > 256) MAX_FOOD = 3;
     if (bProduce && food.length < MAX_FOOD) {
         const newFood = new Cube(FOOD, INITIAL);
         newFood.create();
@@ -1102,7 +1108,6 @@ function makeBot() {
         cycleBot++;
     } else {
         cycleBot = 0;
-
         if (bots.length < MAX_BOT) {
             let botIndex = bots.length; // Track the index of the new bot
             let newBot = new Cube(BOT, INITIAL);
@@ -1346,14 +1351,11 @@ function animate() {
 
     render();
 
-    makeFood(star.cube.size);
-    makeBot();
     if (star) {
         star.eatFoodAround();
         star.eatBotAround();
         star.eatTailAround();
     }
-
     bots.forEach((bot, i) => {
         botState = i;
         bot.eatPlayerAround(star);
@@ -1364,6 +1366,8 @@ function animate() {
 
     updateTable(star, bots);
     setHistory();
+    makeFood(star.cube.size);
+    makeBot();
 }
 
 function mainEngine() {

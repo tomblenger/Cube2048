@@ -1533,6 +1533,7 @@ if (isMobile) {
         });
 
         food.forEach(item => scene.remove(item.cube));
+        star.removeTimer();
         viewReplayEngine();
 
     });
@@ -1605,6 +1606,7 @@ if (isMobile) {
         });
 
         food.forEach(item => scene.remove(item.cube));
+        star.removeTimer();
         viewReplayEngine();
 
     });

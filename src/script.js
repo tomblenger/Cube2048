@@ -613,7 +613,9 @@ class Cube {
     }
 
     eatTailAround() {
-        let neighbor = [...bots, star]
+        let neighbor;
+        if(this.type !== PERSON) neighbor = [...bots, star]
+        else neighbor = [...bots];
         neighbor.forEach(bot => {
             let tailLength = bot.tail.length
             if (tailLength) {
@@ -1043,6 +1045,36 @@ function drawX() {
 }
 
 function render() {
+    let totalBuf = [[star.pos[0], star.pos[1]],];
+    star.tail.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
+    bots.forEach(bot => {
+        totalBuf.push([bot.pos[0], bot.pos[1]]);
+        bot.tail.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
+    });
+
+    food.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
+
+    // Find objects in arr2.children that are NOT in arr1
+    const difference = scene.children.filter(obj =>
+      !totalBuf.some(arr => arr[0] === obj.position.x && arr[1] === obj.position.y)
+    );
+
+    // Loop through the scene children and remove objects in the difference
+    scene.children.forEach(obj => {
+        // if (obj.isMesh) { // Ensure it's a Mesh object
+        if(obj.geometry && obj.geometry.type === 'BoxGeometry') {
+            const isInDifference = difference.some(diff =>
+              diff.position.x === obj.position.x && diff.position.y === obj.position.y
+            );
+
+            if (isInDifference) {
+                scene.remove(obj); // Remove from scene
+                obj.geometry.dispose(); // Free memory
+                obj.material.dispose(); // Free memory
+            }
+        }
+    });
+
     renderer.setSize(sizes.width, sizes.height);
     renderer.render(scene, camera);
 }
@@ -1096,7 +1128,7 @@ function makeFood(size = 2) {
         food.push(newFood);
 
         // const sizeUpdates = (Math.random() * 5) | 0; // Random number 0-4
-        const sizeUpdates = (Math.random() * 4 * Math.log2(size));
+        const sizeUpdates = (Math.random() * 4 * Math.log2(size)) + 1;
         for (let i = 0; i < sizeUpdates; i++) {
             newFood.updateSize();
         }
@@ -1123,8 +1155,8 @@ function makeBot() {
             botText.rotation.z = -newBot.cube.rotation.z;
 
             newBot.cube.add(botText); // Attach text to the newly created bot
-            bots.push(newBot); // Store the new bot in the array
 
+            bots.push(newBot); // Store the new bot in the array
             // Randomly resize the new bot (0 to 4 times)
             let buf = Math.floor(Math.random() * 5);
             for (let i = 0; i < buf; i++) {

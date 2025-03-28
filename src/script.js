@@ -1024,7 +1024,7 @@ function drawX() {
         color: 'rgb(123,182,255)',
         dashSize: 0.04, // Length of dashes (small for dots)
         gapSize: 0.5, // Space between dashes (adjust for dot effect)
-        linewidth: 20
+        linewidth: (window.innerWidth > 767) ? 20 : 3
     });
     const yCount = maxScaledHeight;
 

@@ -7,8 +7,7 @@
     font-size: 18px;
     color: white;
     background: transparent;
-    /* min-width: 85%; */
-    /* border-left: 4px solid #fdd67b; */
+    border-left: 4px solid #fdd67b;
     padding: 13px 50px;
     border-radius: 2px;
     outline: none;
@@ -54,8 +53,7 @@
 
 #inputWrapper {
     display: flex;
-    align-items: center;
-    padding: 5px;
+    justify-content: start;
     margin-left: 35%;
     border: solid #d6a743 4px;
     border-radius: 20px;
@@ -68,15 +66,12 @@
 
 #userIcon {
     width: 100px;
-    background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
     padding: 10px;
-    /* border-radius: 50%; */
     display: flex;
     align-items: center;
     justify-content: center;
-    /* margin-left: 0px;*/
+    margin-left: 5px;
     margin-right: 5px;
-    box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 
@@ -202,188 +197,6 @@ input {
     color: #ff9900;
     margin-bottom: 10%;
     text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, -4px -4px 0 #0d9b00, 4px -4px 0 #0d9b00, -4px 4px 0 #0d9b00, 4px 4px 0 #0d9b00;
-}
-
-@media (max-width: 767px) {
-    #cubename {
-        font-size: 60px;
-    }
-    #startButton {
-        font-size: 20px;
-    }
-    #game-form {
-        font-size: 20px;
-    }
-    .play-icon {
-        font-size: 7px;
-    }
-    #userIcon img {
-        width: 20px;
-        height: 15px;
-    }
-    #inputWrapper {
-        padding: 2px;
-        margin-left: 15%;
-        border: solid #d6a743 4px;
-        border-radius: 15px;
-        width: 70%;
-        position: relative;
-    }
-    #playerName {
-        background: transparent;
-        /* min-width: 100%; */
-        border-left: 2px solid #fdd67b;
-        padding: 13px 50px;
-        border-radius: 1px;
-        outline: none;
-        position: relative;
-    }
-    #userIcon {
-        background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
-        padding: 10px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-left: 15px;
-        margin-right: 10px;
-        box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
-    }
-    .leaderboard-container {
-        top: 10px;
-        right: 5px;
-        width: 100px;
-    }
-    td {
-        padding: 0px;
-        font-size: 11px;
-        text-align: center;
-    }
-    .rank {
-        color: gray;
-        text-align: center;
-        min-width: 20px;
-    }
-    .name {
-        padding-left: 0px;
-        min-width: 30px;
-    }
-    .score {
-        text-align: right;
-        min-width: 20px;
-    }
-}
-
-@media (max-width: 1248px) {
-    #canvas-container {
-        width: 100%;
-        height: 100%;
-    }
-    #webgl {
-        position: absolute;
-    }
-    #game-form {
-        position: absolute;
-        width: 100%;
-        font-size: 20px;
-    }
-    #cubename {
-        font-size: 60px;
-        top: -10px;
-        margin-bottom: 20px;
-    }
-    #startButton {
-        font-size: 30px;
-    }
-    .play-icon {
-        font-size: 30px;
-    }
-    #userIcon img {
-        width: 20px;
-        height: 30px;
-    }
-    #inputWrapper {
-        padding: 2px;
-        /* left: 35%; */
-        border: solid #d6a743 4px;
-        border-radius: 15px;
-        /* width: 50%; */
-        position: relative;
-    }
-    #playerName {
-        font-size: 30px;
-        color: white;
-        background: transparent;
-        border-left: 2px solid #fdd67b;
-        /* padding: 13px 50px; */
-        border-radius: 1px;
-        outline: none;
-        text-align: left;
-        /* min-width: 60%; */
-        /* width: 200px; */
-        position: relative;
-    }
-    #userIcon {
-        background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
-        padding: 10px;
-        /* border-radius: 50%; */
-        display: flex;
-        width: 50px;
-        align-items: center;
-        justify-content: center;
-        margin-left: 15px;
-        margin-right: 10px;
-        box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
-    }
-    /* .leaderboard-container {
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        min-width: 200px;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 10px;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    } */
-    .leaderboard-container {
-        top: 10px;
-        right: 5px;
-        min-width: 100px;
-    }
-    td {
-        padding: 0px;
-        font-size: 11px;
-        text-align: center;
-    }
-    .rank {
-        color: gray;
-        text-align: center;
-        /* min-width: 20px; */
-    }
-    .name {
-        padding-left: 0px;
-        /* min-width: 30px; */
-    }
-    .score {
-        /* padding-right: 0px; */
-        /* text-align: left; */
-        /* min-width: 20px; */
-    }
-    #settingsButton {
-        position: absolute!important;
-        top: 5%;
-        left: 5%;
-        padding: 5px;
-        font-size: 20px;
-        background-color: darkgray;
-        border-radius: 20%;
-    }
-    #settingsButton:hover {
-        background-color: gray;
-    }
-    #player-row {
-        height: 20px!important;
-    }
 }
 
 
@@ -591,4 +404,174 @@ body {
 
 .icon {
     margin-right: 8px;
+}
+
+@media (max-width: 767px) {
+    #cubename {
+        position: absolute;
+        margin-top: 30px;
+        font-size: 60px;
+        margin-bottom: 0px;
+        padding-left: 20%;
+        z-index: 120;
+    }
+    #startButton {
+        position: absolute;
+        margin-top: 25%;
+        font-size: 20px;
+        left: 35%
+    }
+    #inputWrapper {
+        padding: 2px;
+        border: solid #d6a743 4px;
+        border-radius: 15px;
+        position: absolute;
+        margin-top: 15%;
+    }
+    #game-form {
+        font-size: 20px;
+    }
+    /*.play-icon {
+        font-size: 7px;
+    }
+    #userIcon img {
+        width: 20px;
+        height: 15px;
+    }
+    
+    #playerName {
+        background: transparent;
+        border-left: 2px solid #fdd67b;
+        padding: 13px 50px;
+        border-radius: 1px;
+        outline: none;
+        position: relative;
+    }
+    #userIcon {
+        background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
+        padding: 10px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        margin-right: 10px;
+        box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .leaderboard-container {
+        top: 10px;
+        right: 5px;
+        width: 100px;
+    }
+    td {
+        padding: 0px;
+        font-size: 11px;
+        text-align: center;
+    }
+    .rank {
+        color: gray;
+        text-align: center;
+        min-width: 20px;
+    }
+    .name {
+        padding-left: 0px;
+        min-width: 30px;
+    }
+    .score {
+        text-align: right;
+        min-width: 20px;
+    } */
+}
+
+@media (max-width: 1248px) {
+    /* #canvas-container {
+        width: 100%;
+        height: 100%;
+    }
+    #webgl {
+        position: absolute;
+    }
+    #game-form {
+        position: absolute;
+        width: 100%;
+        font-size: 20px;
+    }
+    #cubename {
+        font-size: 60px;
+        top: -10px;
+        margin-bottom: 20px;
+    }
+    #startButton {
+        font-size: 30px;
+    }
+    .play-icon {
+        font-size: 30px;
+    }
+    #userIcon img {
+        width: 20px;
+        height: 30px;
+    }
+    #inputWrapper {
+        padding: 2px;
+        border: solid #d6a743 4px;
+        border-radius: 15px;
+        position: relative;
+    }
+    #playerName {
+        font-size: 30px;
+        color: white;
+        background: transparent;
+        border-left: 2px solid #fdd67b;
+        border-radius: 1px;
+        outline: none;
+        text-align: left;
+        position: relative;
+    }
+    #userIcon {
+        background: linear-gradient(180deg, #fdd67b 0%, #d6a743 100%);
+        padding: 10px;
+        display: flex;
+        width: 50px;
+        align-items: center;
+        justify-content: center;
+        margin-left: 15px;
+        margin-right: 10px;
+        box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .leaderboard-container {
+        top: 10px;
+        right: 5px;
+        min-width: 100px;
+    }
+    td {
+        padding: 0px;
+        font-size: 11px;
+        text-align: center;
+    }
+    .rank {
+        color: gray;
+        text-align: center;
+        
+    }
+    .name {
+        padding-left: 0px;
+        
+    }
+    .score {
+    }
+    #settingsButton {
+        position: absolute!important;
+        top: 5%;
+        left: 5%;
+        padding: 5px;
+        font-size: 20px;
+        background-color: darkgray;
+        border-radius: 20%;
+    }
+    #settingsButton:hover {
+        background-color: gray;
+    }
+    #player-row {
+        height: 20px!important;
+    } */
 }

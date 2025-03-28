@@ -294,7 +294,6 @@ input {
     }
     #startButton {
         font-size: 30px;
-        left: 35%
     }
     .play-icon {
         font-size: 30px;
@@ -593,37 +592,3 @@ body {
 .icon {
     margin-right: 8px;
 }
-
-
-/* @media screen and (orientation: portrait) {
-            body {
-                transform: rotate(90deg);
-                transform-origin: center;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                position: absolute;
-                /* top: 0;
-                left: 0; */
-
-
-/* }
-    #game-form {
-        position: absolute;
-        top: 10%;
-        z-index: 10;
-        font-size: 30px;
-        background-color: transparent;
-    } */
-
-
-/* #cubename {
-        font-family: 'Luckiest Guy', cursive;
-        font-size: 120px;
-        font-weight: bold;
-        text-transform: uppercase;
-        color: #ff9900;
-        margin-bottom: 10%;
-        text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, -4px -4px 0 #0d9b00, 4px -4px 0 #0d9b00, -4px 4px 0 #0d9b00, 4px 4px 0 #0d9b00;
-    }
-} */

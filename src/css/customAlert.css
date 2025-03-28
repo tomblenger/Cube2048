@@ -158,16 +158,6 @@
             font-size: 50px;
         }
     }
-    /* 
-#controllerCanvas {
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    bottom: 0px;
-    left: 0px;
-    z-index: 100;
-    display: none
-} */
     
     #joystick-container {
         position: absolute;
@@ -176,5 +166,6 @@
         background-color: wheat;
         width: 100px;
         height: 100px;
-        z-index: 150000;
+        z-index: 150;
+        border-radius: 100%;
     }

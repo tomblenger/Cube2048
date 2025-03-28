@@ -14,6 +14,7 @@ const webgl = document.getElementById('webgl');
 const gameForm = document.getElementById("game-form");
 const style = document.getElementById('colorStyle');
 const audioElement = document.getElementById('myAudio');
+const joystickContainer = document.getElementById('joystick-container');
 
 const PERSON = 0;
 const FOOD = 1;
@@ -1003,9 +1004,6 @@ function addPlane() {
     const width = maxScaledWidth * 2 + 0.5;
     const height = maxScaledHeight * 2 + 0.5;
 
-    // Initialize Fog before adding objects
-    // scene.fog = new THREE.FogExp2(0xdddddd, 0.08);
-
     // Create Plane
     const geometry = new THREE.PlaneGeometry(width, height);
     const material = new THREE.MeshBasicMaterial({
@@ -1288,8 +1286,6 @@ function updateTable(person, bots) {
 }
 
 function detectDevice() {
-    // const width = window.innerWidth || document.documentElement.clientWidth;
-    // return ('ontouchstart' in window || navigator.maxTouchPoints > 0) && width < 1024;
     if (
         /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|ipad|iris|kindle|Android|Silk|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(
             navigator.userAgent,
@@ -1299,7 +1295,9 @@ function detectDevice() {
         )
     ) {
         return true;
-    } else { return false; }
+    } else {
+        return false;
+    }
 }
 
 function animate() {
@@ -1482,25 +1480,6 @@ function toggleSetting() {
     }
 }
 
-// function enterFullscreen() {
-//     let elem = document.documentElement; // Fullscreen the entire page
-
-//     if (elem.requestFullscreen) {
-//         elem.requestFullscreen();
-//     } else if (elem.mozRequestFullScreen) { // Firefox
-//         elem.mozRequestFullScreen();
-//     } else if (elem.webkitRequestFullscreen) { // Chrome, Safari, Opera
-//         elem.webkitRequestFullscreen();
-//     } else if (elem.msRequestFullscreen) { // IE/Edge
-//         elem.msRequestFullscreen();
-//     }
-// }
-
-// // Automatically enter fullscreen on load
-// window.addEventListener('load', () => {
-//     setTimeout(enterFullscreen, 1000); // Delay to ensure page is fully loaded
-// });
-
 //----------------------------------------start pro--------------------------------------------//
 
 if (detectDevice()) {
@@ -1509,17 +1488,12 @@ if (detectDevice()) {
     isMobile = false;
 }
 
-
-
-
 settingsButton.addEventListener('click', toggleSetting);
 settingsButton.addEventListener('touchstart', toggleSetting);
 settingsButton.addEventListener('touchend', toggleSetting);
 
 if (isMobile) {
-    window.addEventListener("click", () => {
-        alert("Click detected!");
-    });
+
     gameForm.addEventListener("submit", function(event) {
         try {
             event.preventDefault();
@@ -1536,7 +1510,6 @@ if (isMobile) {
     }
 
     document.addEventListener('touchmove', (event) => {
-        isDragging = true;
         if (!star) return;
         nameText.rotation.z = -star.cube.rotation.z;
 
@@ -1616,6 +1589,7 @@ if (isMobile) {
         settingsForm.classList.add('hidden');
     })
 
+    joystickContainer.style.display = 'block';
 } else {
     document.addEventListener('mousemove', (event) => {
         if (!star) return;
@@ -1696,11 +1670,9 @@ if (isMobile) {
 
 //create canvas, scene, camera and renderer
 const canvas = document.querySelector('canvas.webgl');
-// const canvas = document.getElementById('webgl')
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height);
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
-
 
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 

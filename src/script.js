@@ -1262,7 +1262,7 @@ function cleanScene() {
 
     // Find objects in arr2.children that are NOT in arr1
     const difference = scene.children.filter(obj =>
-      !totalBuf.some(arr => arr[0] === obj.position.x && arr[1] === obj.position.y)
+        !totalBuf.some(arr => arr[0] === obj.position.x && arr[1] === obj.position.y)
     );
 
     // Loop through the scene children and remove objects in the difference
@@ -1270,7 +1270,7 @@ function cleanScene() {
         // if (obj.isMesh) { // Ensure it's a Mesh object
         if (obj.geometry && obj.geometry.type === 'BoxGeometry') {
             const isInDifference = difference.some(diff =>
-              diff.position.x === obj.position.x && diff.position.y === obj.position.y
+                diff.position.x === obj.position.x && diff.position.y === obj.position.y
             );
 
             if (isInDifference) {
@@ -1471,6 +1471,19 @@ settingsButton.addEventListener('touchstart', toggleSetting);
 settingsButton.addEventListener('touchend', toggleSetting);
 
 if (isMobile) {
+    joystickContainer.style.display = 'block';
+    document.addEventListener("touchmove", (event) => {
+        let touch = event.touches[0];
+        const joystick = document.getElementById("joystick");
+        const rect = joystick.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const deltaX = touch.clientX - centerX;
+        const deltaY = touch.clientY - centerY;
+        const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+        const distance = Math.min(Math.sqrt(deltaX ** 2 + deltaY ** 2), 20);
+        joystick.style.transform = `translate(${deltaX / 10}px, ${deltaY / 10}px) rotate(${angle}deg)`;
+    });
 
     gameForm.addEventListener("submit", function(event) {
         try {
@@ -1568,7 +1581,7 @@ if (isMobile) {
         settingsForm.classList.add('hidden');
     })
 
-    joystickContainer.style.display = 'block';
+
 } else {
     document.addEventListener('mousemove', (event) => {
         if (!star) return;

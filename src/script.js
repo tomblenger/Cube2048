@@ -575,10 +575,9 @@ class Cube {
                         scene.remove(bots[i].botName);
                         scene.remove(bots[i].cube);
                         // scene.remove(bots[i].text);
-                        bots[i].botName.dispose();
-                        bots[i].cube.dispose();
                         bots[i] = null;
                         tailBuf = new Cube(TAIL, INITIAL);
+                        render();
                         tailBuf.create();
                         while (true) {
                             if (monster.size === tailBuf.size) break;

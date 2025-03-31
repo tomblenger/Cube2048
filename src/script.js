@@ -345,7 +345,7 @@ class Cube {
         this.name.text = cubeName === 'you' ? 'you' : cubeName;
         this.name.position.set(this.pos[0] - 0.1, this.pos[1], 0.8);
 
-        scene.add(this.name)
+        scene.add(this.name);
     }
 
     makeBotName() {
@@ -572,9 +572,12 @@ class Cube {
                 if (bCrash) {
                     if (monster.size < this.size) {
                         playAudio(this.type);
-                        scene.remove(bots[i].cube);
-                        scene.remove(bots[i].text);
                         scene.remove(bots[i].botName);
+                        scene.remove(bots[i].cube);
+                        // scene.remove(bots[i].text);
+                        bots[i].botName.dispose();
+                        bots[i].cube.dispose();
+                        bots[i] = null;
                         tailBuf = new Cube(TAIL, INITIAL);
                         tailBuf.create();
                         while (true) {
@@ -587,6 +590,7 @@ class Cube {
                         // bots.delete(i);
                         let index = bufBots.findIndex(bufBot => bufBot === i);
                         if (index === -1) bufBots.push(i);
+                        return;
                     } else {
                         if (bOverlap) {
                             let bufCenterAngle = Math.atan2((monster.pos[1] - this.pos[1]), (monster.pos[0] - this.pos[0])) - this.cube.rotation.z;
@@ -1536,6 +1540,8 @@ function viewReplayEngine() {
         } else {
             document.getElementById("die").style.display = 'flex';
         }
+
+        trace = [];
         return;
     }
 
@@ -1723,9 +1729,8 @@ if (isMobile) {
 
         food.forEach(item => scene.remove(item.cube));
         star.removeTimer();
-        trace = [];
+        frameCount = 0;
         viewReplayEngine();
-
     });
 
     window.onload = function() {
@@ -1774,7 +1779,6 @@ if (isMobile) {
     });
 
     document.getElementById("viewReplay").addEventListener("click", function() {
-        window.alert("Here")
         document.getElementById("customAlert").style.display = 'none';
         scene.remove(star.cube);
 
@@ -1787,8 +1791,8 @@ if (isMobile) {
         });
 
         food.forEach(item => scene.remove(item.cube));
+        frameCount = 0;
         star.removeTimer();
-        trace = [];
         viewReplayEngine();
 
     });

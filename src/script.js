@@ -3,6 +3,9 @@ import { Text } from 'troika-three-text'
 import { RoundedBoxGeometry } from "three/addons";
 import nipplejs from 'nipplejs';
 
+let isMobile;
+isMobile = detectDevice();
+
 const saveSettingsButton = document.getElementById('saveSettingsButton');
 const settingsButton = document.getElementById('settingsButton');
 const settingsForm = document.getElementById('settingsForm');
@@ -40,8 +43,8 @@ const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 };
-const maxWidth = sizes.width * 2;
-const maxHeight = sizes.height * 2;
+const maxWidth = isMobile ? sizes.width * 5 : sizes.width * 2;
+const maxHeight = isMobile ? sizes.height * 5 : sizes.height * 2;
 const screenScale = 200;
 const maxScaledWidth = maxWidth / screenScale;
 const maxScaledHeight = maxHeight / screenScale;
@@ -50,6 +53,11 @@ const scaledSize = {
     width: sizes.width / screenScale * 2,
     height: sizes.height / screenScale * 2
 }
+
+const cameraMax = {
+    width: maxScaledWidth - scaledSize.width * 1.2,
+    height: maxScaledHeight - scaledSize.height * 1.2,
+};
 
 const color1 = [
     'rgb(205, 92, 92)', //2
@@ -100,7 +108,6 @@ let cubeName = "you";
 let colorStyle = 'style1';
 let difficulty = "easy";
 let threeAngle;
-let isMobile;
 let isIncrease = false;
 let moveSpeed = { x: 0.035, y: 0.035 };
 let moveSpeedStar = { x: 0.035, y: 0.035 };
@@ -133,6 +140,21 @@ let isPlaying = false;
 let MAX_BOT = 20;
 let MAX_INIT_FOOD = 30;
 let MAX_FOOD = 40;
+
+let topWall, leftWall, bottomWall, rightWall;
+let topBoundary, leftBoundary, bottomBoundary, rightBoundary;
+let wallSize = 3;
+let boundarySize = 7;
+const geometryBoundary = new RoundedBoxGeometry(maxScaledWidth + scaledSize.width + boundarySize + wallSize * 4, boundarySize, 0.36, 3, 0.05);
+const geometryBoundaryVertical = new RoundedBoxGeometry(boundarySize , maxScaledHeight + scaledSize.height + boundarySize * 2 + 0.6, 0.36, 3, 0.05);
+const geometryWall = new RoundedBoxGeometry(maxScaledWidth + scaledSize.width + wallSize * 4, wallSize, 0.35, 3, 0.05);
+const geometryWallVertical = new RoundedBoxGeometry(wallSize, maxScaledHeight + scaledSize.height + wallSize * 4 + 0.6, 0.35, 3, 0.05);
+
+const colorWall = 'rgb(106, 106, 106)'; //2
+const materialWall = new THREE.MeshStandardMaterial({ color: colorWall });
+
+const colorBoundary = 'rgb(204, 204, 204)';
+const materialBoundary = new THREE.MeshStandardMaterial({ color: colorBoundary });
 
 function playAudio(cubeType) {
     if (!isPlaying && cubeType === PERSON) {
@@ -987,6 +1009,34 @@ function addPlane() {
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
 }
+function addWall() {
+    topWall = new THREE.Mesh(geometryWall, materialWall);
+    bottomWall = new THREE.Mesh(geometryWall, materialWall);
+    leftWall = new THREE.Mesh(geometryWallVertical, materialWall);
+    rightWall = new THREE.Mesh(geometryWallVertical, materialWall);
+    scene.add(topWall);
+    scene.add(bottomWall);
+    scene.add(leftWall);
+    scene.add(rightWall);
+    topWall.position.set(0, maxScaledHeight + wallSize / 2 + 0.2,  0.1);
+    bottomWall.position.set(0, -(maxScaledHeight + wallSize / 2 + 0.2), 0.1);
+    leftWall.position.set(-(maxScaledWidth + wallSize / 2 + 0.2), 0, 0.1);
+    rightWall.position.set(maxScaledWidth + wallSize / 2 + 0.2, 0, 0.1);
+
+
+    topBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
+    bottomBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
+    leftBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
+    rightBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
+    scene.add(topBoundary);
+    scene.add(bottomBoundary);
+    scene.add(leftBoundary);
+    scene.add(rightBoundary);
+    topBoundary.position.set(0, maxScaledHeight + wallSize + boundarySize / 2 + 0.1,  0.1);
+    bottomBoundary.position.set(0, -(maxScaledHeight + wallSize + boundarySize / 2 + 0.1), 0.1);
+    leftBoundary.position.set(-(maxScaledWidth + wallSize + boundarySize / 2 + 0.2), 0, 0.1);
+    rightBoundary.position.set(maxScaledWidth + wallSize + boundarySize / 2 + 0.2, 0, 0.1);
+}
 
 function drawX() {
     const material = new THREE.LineDashedMaterial({
@@ -1020,7 +1070,9 @@ function cameraCtrl() {
     if (!star || !star.pos) { return; }
 
     const [x, y] = star.pos; // Destructure for better readability
-    camera.position.set(x, y - 3, 5);
+
+    if(isMobile) camera.position.set(x, y - 2, 3);
+    else camera.position.set(x, y - 3, 5);
     camera.rotation.x = Math.PI / 7;
 }
 
@@ -1223,6 +1275,7 @@ function initPro() {
 
     // Add additional elements
     addPlane();
+    addWall();
     drawX();
 }
 
@@ -1277,6 +1330,14 @@ function detectDevice() {
 function cleanScene() {
     let totalBuf = [
         [star.pos[0], star.pos[1]],
+        [topWall.position.x, topWall.position.y],
+        [bottomWall.position.x, bottomWall.position.y],
+        [rightWall.position.x, rightWall.position.y],
+        [leftWall.position.x, leftWall.position.y],
+        [topBoundary.position.x, topBoundary.position.y],
+        [bottomBoundary.position.x, bottomBoundary.position.y],
+        [rightBoundary.position.x, rightBoundary.position.y],
+        [leftBoundary.position.x, leftBoundary.position.y],
     ];
     star.tail.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
     bots.forEach(bot => {
@@ -1332,7 +1393,7 @@ function animate() {
 
     if (star) {
         if (star.name !== null) {
-            
+
         }
         star.makeStarName();
         star.setStarBuffer();
@@ -1402,7 +1463,7 @@ function viewReplayEngine() {
 
     // Restore the star position
     star = restore(star, trace[frameCount].star);
-    nameText.rotation.z = -star.cube.rotation.z;
+    // nameText.rotation.z = -star.cube.rotation.z;
 
     // Restore food positions
     trace[frameCount].food.forEach((info, i) => {
@@ -1504,7 +1565,6 @@ window.addEventListener("resize", checkOrientation);
 checkOrientation();
 
 
-isMobile = detectDevice();
 
 settingsButton.addEventListener('click', toggleSetting);
 settingsButton.addEventListener('touchstart', toggleSetting);
@@ -1512,9 +1572,9 @@ settingsButton.addEventListener('touchend', toggleSetting);
 
 
 if (isMobile) {
-    MAX_INIT_FOOD = 10;
-    MAX_FOOD = 15;
-    MAX_BOT = 4;
+    // MAX_INIT_FOOD = 10;
+    // MAX_FOOD = 15;
+    // MAX_BOT = 4;
     joystickContainer.style.display = 'block';
     document.addEventListener("touchmove", (event) => {
         let touch = event.touches[0];
@@ -1551,7 +1611,7 @@ if (isMobile) {
 
     document.addEventListener('touchmove', (event) => {
         if (!star) return;
-        nameText.rotation.z = -star.cube.rotation.z;
+        // nameText.rotation.z = -star.cube.rotation.z;
 
         let touch = event.touches[0];
         joyX = touch.clientX;

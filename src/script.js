@@ -544,6 +544,7 @@ class Cube {
         let bOverlap = false;
 
         bots.forEach((monster, i) => {
+            if(!monster) return;
             if (bufBots.length !== 0) {
                 bots = deleteIndexesFromArray(bots, bufBots);
                 bufBots = [];
@@ -612,6 +613,7 @@ class Cube {
         if (this.type !== PERSON) neighbor = [...bots, star]
         else neighbor = [...bots];
         neighbor.forEach(bot => {
+            if(!bot) return;
             let tailLength = bot.tail.length
             if (tailLength) {
                 bot.tail.forEach((item, i) => {
@@ -656,6 +658,7 @@ class Cube {
         if (this.type === PERSON) {
             star.tail.forEach((item, i) => {
                 bots.forEach((bot, i) => {
+                    if(!bot) return;
                     const minDist = item.sizeDef;
                     bCrash = false;
                     bOverlap = false;
@@ -697,9 +700,11 @@ class Cube {
             })
         } else {
             bots.forEach((item1, index) => {
+                if(!item1) return;
                 let bufBots = bots.filter((bot, index) => index !== botState);
                 item1.tail.forEach((item, i) => {
                     bufBots.forEach((bot, i) => {
+                        if(!bot) return;
                         const minDist = item.sizeDef;
                         bCrash = false;
                         bOverlap = false;
@@ -965,7 +970,7 @@ class Cube {
 
         neighbors.forEach((neighbor, i) => {
             if (botState === i) return;
-
+            if(!neighbor) return;
             const nx = neighbor.pos[0];
             const ny = neighbor.pos[1];
 
@@ -1420,6 +1425,7 @@ function cleanScene() {
     ];
     star.tail.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
     bots.forEach(bot => {
+        if(!bot) return;
         totalBuf.push([bot.pos[0], bot.pos[1]]);
         bot.tail.forEach(item => totalBuf.push([item.pos[0], item.pos[1]]));
     });
@@ -1492,6 +1498,7 @@ function animate() {
     }
 
     bots.forEach((bot, i) => {
+        if(!bot) return;
         botState = i;
         bot.setBotBuffer();
         bot.setBotPosAngle();
@@ -1509,6 +1516,7 @@ function animate() {
     }
     bots.forEach((bot, i) => {
         botState = i;
+        if(!bot) return;
         bot.eatPlayerAround(star);
         bot.eatFoodAround();
         bot.eatBotAround();

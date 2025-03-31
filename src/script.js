@@ -339,7 +339,7 @@ class Cube {
     }
 
     makeStarName() {
-        this.name.fontSize = 0.1;
+        this.name.fontSize = 0.15;
         this.name.fontWeight = 'bold';
         this.name.color = '#ffffff';
         this.name.text = cubeName === 'you' ? 'you' : cubeName;

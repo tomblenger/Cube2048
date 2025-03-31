@@ -845,7 +845,7 @@ class Cube {
                         return;
                     } else if (currentTail.size > this.size) {
                         scene.remove(currentTail.cube);
-                        scene.remove(currentTail.text)
+                        scene.remove(currentTail.text);
                         while (this.size < currentTail.size) {
                             this.updateSize();
                         }
@@ -1614,15 +1614,21 @@ function removeAll() {
 
     // Remove star and its tails
     if (star) {
+        scene.remove(star.name);
         scene.remove(star.cube);
         star.tail.forEach(item => scene.remove(item.cube));
         star.newtail.forEach(item => scene.remove(item.cube));
+        star = null;
+        render();
     }
 
     // Remove bots and their tails
     bots.forEach(bot => {
+        scene.remove(bot.botName);
         scene.remove(bot.cube);
         bot.tail.forEach(item => scene.remove(item.cube));
+        bot = null;
+        render();
     });
 
     // Remove food
@@ -1756,8 +1762,8 @@ if (isMobile) {
         });
 
         food.forEach(item => scene.remove(item.cube));
-        star.removeTimer();
         frameCount = 0;
+        star.removeTimer();
         viewReplayEngine();
     });
 
@@ -1809,12 +1815,14 @@ if (isMobile) {
     document.getElementById("viewReplay").addEventListener("click", function() {
         document.getElementById("customAlert").style.display = 'none';
         scene.remove(star.cube);
+        scene.remove(star.name);
 
         star.tail.forEach((item) => scene.remove(item.cube));
         star.newtail.forEach(item => scene.remove(item.cube));
 
         bots.forEach(bot => {
             scene.remove(bot.cube);
+            scene.remove(bot.botName);
             bot.tail.forEach((item) => scene.remove(item.cube));
         });
 

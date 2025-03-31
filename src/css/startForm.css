@@ -455,10 +455,32 @@ body {
         width: 150px;
         font-size: 6px;
     }
+    table {
+        top: 5px;
+        right: 5px;
+        border-collapse: separate;
+        border-spacing: 0 5px;
+        text-align: center;
+    }
+    /* td {
+        padding: 0px 0px;
+        font-size: 18px;
+        text-align: center;
+    } */
     .name {
         padding-left: 0px;
-        min-width: 30px;
+        font-size: 15px;
+        min-width: 50px!important;
         overflow: hidden;
+    }
+    .score {
+        text-align: center;
+        font-size: 15px;
+        /* min-width: 40px; */
+    }
+    .rank {
+        font-size: 15px;
+        min-width: 30px;
     }
     #playerName {
         width: 100%

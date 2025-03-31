@@ -1220,13 +1220,13 @@ function updateTable(person, bots) {
     tbody.innerHTML = ''; // Clear the table before updating
 
     sortData.forEach((data, i) => {
-        const row = document.createElement('tr');
-        row.classList.toggle("highlight", data.id === "You"); // Highlight player row
+                const row = document.createElement('tr');
+                row.classList.toggle("highlight", data.id === "You"); // Highlight player row
 
-        row.innerHTML = `
+                row.innerHTML = `
             <td class="rank">${i + 1}</td>
             <td class="name ${data.id === "You" ? 'player-name' : ''}">${data.id === "You" ? (typeof cubeName !== "undefined" ? cubeName : "You") : data.id}</td>
-            <td class="score">${data.cube.size}</td>
+            <td class="score">${data.cube.size < 1000 ? data.cube.size : `${Math.floor(data.cube.size / 1000)}K`}</td>
         `;
 
         tbody.appendChild(row);
@@ -1464,6 +1464,16 @@ function toggleSetting() {
 
 //----------------------------------------start pro--------------------------------------------//
 
+function checkOrientation() {
+    if (window.innerHeight > window.innerWidth) {
+        alert("Please rotate your device to landscape mode.");
+    }
+}
+
+window.addEventListener("resize", checkOrientation);
+checkOrientation();
+
+
 isMobile = detectDevice();
 
 settingsButton.addEventListener('click', toggleSetting);
@@ -1485,7 +1495,7 @@ if (isMobile) {
         let deltaY = touch.clientY - centerY;
         const angle = Math.atan2(deltaY, deltaX);
         const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2) + 20;
-        if(distance > 50) {
+        if (distance > 50) {
             deltaX = 30 * Math.cos(angle);
             deltaY = 30 * Math.sin(angle);
         }

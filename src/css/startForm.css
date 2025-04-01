@@ -462,11 +462,6 @@ body {
         border-spacing: 0 5px;
         text-align: center;
     }
-    /* td {
-        padding: 0px 0px;
-        font-size: 18px;
-        text-align: center;
-    } */
     .name {
         padding-left: 0px;
         font-size: 15px;
@@ -487,4 +482,29 @@ body {
     }
 }
 
-@media (max-width: 1248px) {}
+@media (max-width: 400px) {
+    #inputWrapper {
+        padding: 0px;
+        border: solid #d6a743 4px;
+        border-radius: 15px;
+        position: absolute;
+        margin-top: 57%;
+        width: 70%;
+        margin-left: 15%;
+    }
+    #startButton {
+        position: absolute;
+        padding: 2px;
+        margin-top: 72%;
+        font-size: 20px;
+        left: 32%
+    }
+    #cubename {
+        position: absolute;
+        margin-top: 20px;
+        font-size: 60px;
+        margin-bottom: 0px;
+        padding-left: 0%;
+        z-index: 120;
+    }
+}

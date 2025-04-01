@@ -131,6 +131,7 @@ let mouse = new THREE.Vector2();
 let running = true;
 let bufFood = [];
 let bufBots = [];
+let bufBotsTail = [];
 let tailBuf = null;
 let mouseCount = 0;
 let gameOverCount = 0;
@@ -146,7 +147,7 @@ let topBoundary, leftBoundary, bottomBoundary, rightBoundary;
 let wallSize = 3;
 let boundarySize = 7;
 const geometryBoundary = new RoundedBoxGeometry(maxScaledWidth + scaledSize.width + boundarySize + wallSize * 4, boundarySize, 0.36, 3, 0.05);
-const geometryBoundaryVertical = new RoundedBoxGeometry(boundarySize , maxScaledHeight + scaledSize.height + boundarySize * 2 + 0.6, 0.36, 3, 0.05);
+const geometryBoundaryVertical = new RoundedBoxGeometry(boundarySize, maxScaledHeight + scaledSize.height + boundarySize * 2 + 0.6, 0.36, 3, 0.05);
 const geometryWall = new RoundedBoxGeometry(maxScaledWidth + scaledSize.width + wallSize * 4, wallSize, 0.35, 3, 0.05);
 const geometryWallVertical = new RoundedBoxGeometry(wallSize, maxScaledHeight + scaledSize.height + wallSize * 4 + 0.6, 0.35, 3, 0.05);
 
@@ -285,7 +286,6 @@ class Cube {
         this.text = new Text();
         this.name = new Text();
         this.botName = new Text();
-        this.botBufName = '';
         this.eat = false;
         this.count = 0;
         this.direction = RAND;
@@ -353,7 +353,7 @@ class Cube {
         this.botName.fontWeight = 'bold';
         this.botName.color = '#ffffff';
         // this.botName.text = 'bot';
-        this.botName.position.set(this.pos[0] - 0.1, this.pos[1], 0.5);
+        this.botName.position.set(this.pos[0] - 0.1, this.pos[1] + 0.4, this.sizeDef);
 
         scene.add(this.botName)
     }
@@ -584,7 +584,7 @@ class Cube {
                         this.connectTail(tailBuf);
                         this.setPos();
                         monster.eat = true;
-
+                        // bots.delete(i);
                         let index = bufBots.findIndex(bufBot => bufBot === i);
                         if (index === -1) bufBots.push(i);
                     } else {
@@ -641,6 +641,114 @@ class Cube {
                 })
             }
         });
+    }
+
+    tailEatAround() {
+        let deltaX = 0,
+            deltaY = 0;
+        let bCrash = false;
+        let bOverlap = false;
+        let bufBots = bots.filter((bot, index) => index !== botState);
+
+        if (this.type === PERSON) {
+            star.tail.forEach((item, i) => {
+                bots.forEach((bot, i) => {
+                    const minDist = item.sizeDef;
+                    bCrash = false;
+                    bOverlap = false;
+                    deltaY = Math.abs(bot.pos[1] - item.pos[1]);
+                    deltaX = Math.abs(bot.pos[0] - item.pos[0]);
+                    if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+                        for (let j = 0; j < 4; j++) {
+                            if (isPointInRectangle(bot.corner[j * 2], bot.corner[j * 2 + 1], item.corner)) bCrash = true;
+                            if (isPointInRectangle(item.corner[j * 2], item.corner[j * 2 + 1], bot.corner)) bCrash = true;
+                        }
+                        if (isLineRectangleOverlapping([
+                                [item.corner[6], item.corner[7]],
+                                [item.corner[0], item.corner[1]]
+                            ], bot.corner)) {
+                            bOverlap = true;
+                        }
+                    }
+                    if (bCrash) {
+                        if (bot.size < item.size) {
+                            playAudio(this.type);
+                            scene.remove(bots[i].cube);
+                            scene.remove(bots[i].text);
+                            scene.remove(bots[i].botName);
+                            let buf1 = bots[i].cube;
+                            buf1.tail = [];
+                            buf1.type = FOOD;
+                            let buf2 = bots[i].cube.tail;
+                            buf2.forEach(bot => {
+                                bot.type = FOOD;
+                                buf1.push(bot)
+                            });
+                            buf1.forEach((item, i) => {
+                                item.eat = true;
+                                food.push(item);
+                            })
+                        }
+                    }
+                })
+            })
+        } else {
+            bots.forEach((item1, index) => {
+                let bufBots = bots.filter((bot, index) => index !== botState);
+                item1.tail.forEach((item, i) => {
+                    bufBots.forEach((bot, i) => {
+                        const minDist = item.sizeDef;
+                        bCrash = false;
+                        bOverlap = false;
+                        deltaY = Math.abs(bot.pos[1] - item.pos[1]);
+                        deltaX = Math.abs(bot.pos[0] - item.pos[0]);
+                        if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+                            for (let j = 0; j < 4; j++) {
+                                if (isPointInRectangle(bot.corner[j * 2], bot.corner[j * 2 + 1], item.corner)) bCrash = true;
+                                if (isPointInRectangle(item.corner[j * 2], item.corner[j * 2 + 1], bot.corner)) bCrash = true;
+                            }
+                            if (isLineRectangleOverlapping([
+                                    [item.corner[6], item.corner[7]],
+                                    [item.corner[0], item.corner[1]]
+                                ], bot.corner)) {
+                                bOverlap = true;
+                            }
+                        }
+                        if (bCrash) {
+                            if (bot.size < item.size) {
+                                playAudio(this.type);
+                                scene.remove(bots[i].cube);
+                                scene.remove(bots[i].text);
+                                scene.remove(bots[i].botName);
+                                tailBuf = new Cube(TAIL, INITIAL);
+                                tailBuf.create();
+                                while (true) {
+                                    if (bot.size === tailBuf.size) break;
+                                    tailBuf.updateSize();
+                                }
+                                item1.connectTail(tailBuf);
+                                this.setPos();
+                                bot.eat = true;
+                                // bots.delete(i);
+                                let index = bufBots.findIndex(bufBot => bufBot === i);
+                                if (index === -1) bufBots.push(i);
+                            } else {
+                                if (bOverlap) {
+                                    let bufCenterAngle = Math.atan2((bot.pos[1] - item.pos[1]), (bot.pos[0] - item.pos[0])) - item.cube.rotation.z;
+                                    if (bufCenterAngle > 0) bot.cube.rotation.z -= Math.PI / 2000;
+                                    else if (bufCenterAngle < 0) bot.cube.rotation.z += Math.PI / 2000;
+                                    bot.pos[0] = bot.pos[0] + Math.cos(this.cube.rotation.z) * moveSpeedStar.x;
+                                    bot.pos[1] = bot.pos[1] + Math.sin(this.cube.rotation.z) * moveSpeedStar.x;
+                                    bot.setPos();
+                                    bot.setAngle(monster.cube.rotation.z);
+                                    bot.setCornerPosition();
+                                }
+                            }
+                        }
+                    })
+                })
+            })
+        }
     }
 
     setStarBuffer() {
@@ -831,26 +939,6 @@ class Cube {
 
             if (this.bufPos[item.arrIndex]) {
                 let [x, y, z] = this.bufPos[item.arrIndex];
-                //
-                // let offsetX = item.sizeDef * (j + 1);
-                // let offsetY = item.sizeDef * (j + 1);
-                //
-                // if (Math.abs(mouse.y) < 0.03) {
-                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth - offsetX;
-                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth + offsetX;
-                // } else {
-                //     if (this.pos[0] === maxScaledWidth) x = maxScaledWidth;
-                //     else if (this.pos[0] === -maxScaledWidth) x = -maxScaledWidth;
-                // }
-                //
-                // if (Math.abs(mouse.x) < 0.03) {
-                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight - offsetY;
-                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight + offsetY;
-                // } else {
-                //     if (this.pos[1] === maxScaledHeight) y = maxScaledHeight;
-                //     else if (this.pos[1] === -maxScaledHeight) y = -maxScaledHeight;
-                // }
-
                 item.pos = [x, y, z];
                 item.setPos();
             }
@@ -1009,6 +1097,7 @@ function addPlane() {
     const plane = new THREE.Mesh(geometry, material);
     scene.add(plane);
 }
+
 function addWall() {
     topWall = new THREE.Mesh(geometryWall, materialWall);
     bottomWall = new THREE.Mesh(geometryWall, materialWall);
@@ -1018,7 +1107,7 @@ function addWall() {
     scene.add(bottomWall);
     scene.add(leftWall);
     scene.add(rightWall);
-    topWall.position.set(0, maxScaledHeight + wallSize / 2 + 0.2,  0.1);
+    topWall.position.set(0, maxScaledHeight + wallSize / 2 + 0.2, 0.1);
     bottomWall.position.set(0, -(maxScaledHeight + wallSize / 2 + 0.2), 0.1);
     leftWall.position.set(-(maxScaledWidth + wallSize / 2 + 0.2), 0, 0.1);
     rightWall.position.set(maxScaledWidth + wallSize / 2 + 0.2, 0, 0.1);
@@ -1032,7 +1121,7 @@ function addWall() {
     scene.add(bottomBoundary);
     scene.add(leftBoundary);
     scene.add(rightBoundary);
-    topBoundary.position.set(0, maxScaledHeight + wallSize + boundarySize / 2 + 0.1,  0.1);
+    topBoundary.position.set(0, maxScaledHeight + wallSize + boundarySize / 2 + 0.1, 0.1);
     bottomBoundary.position.set(0, -(maxScaledHeight + wallSize + boundarySize / 2 + 0.1), 0.1);
     leftBoundary.position.set(-(maxScaledWidth + wallSize + boundarySize / 2 + 0.2), 0, 0.1);
     rightBoundary.position.set(maxScaledWidth + wallSize + boundarySize / 2 + 0.2, 0, 0.1);
@@ -1071,7 +1160,7 @@ function cameraCtrl() {
 
     const [x, y] = star.pos; // Destructure for better readability
 
-    if(isMobile) camera.position.set(x, y - 2, 3);
+    if (isMobile) camera.position.set(x, y - 2, 3);
     else camera.position.set(x, y - 3, 5);
     camera.rotation.x = Math.PI / 7;
 }
@@ -1133,16 +1222,6 @@ function makeBot() {
             let botIndex = bots.length; // Track the index of the new bot
             let newBot = new Cube(BOT, INITIAL);
             newBot.create();
-
-            // let botText = new Text();
-            // botText.fontSize = 0.13;
-            // botText.fontWeight = 'bold';
-            // botText.color = '#ffffff';
-            // botText.geometry.center();
-            // botText.position.z = 0.3;
-            // botText.text = `Bot${botIndex}`; // Assign correct label
-            // botText.rotation.z = -newBot.cube.rotation.z;
-
 
             newBot.botName.text = `Bot${botIndex}`;
             // newBot.cube.add(botText); // Attach text to the newly created bot
@@ -1232,9 +1311,6 @@ function setHistory() {
     let tFood = food.map(foodItem => extract(foodItem));
 
     trace.push({ star: tStar, bot: tBot, food: tFood });
-
-    // Limit trace history to prevent excessive memory usage (e.g., keep last 100 states)
-    // if (trace.length > 1000) trace.shift();
 }
 
 function initPro() {
@@ -1400,6 +1476,7 @@ function animate() {
         star.setStarPosAngle();
         star.mergeTailEngine();
         star.traceEngine();
+        
         if (isIncrease) {
             star.drawTimer();
         } else {
@@ -1425,6 +1502,7 @@ function animate() {
         star.eatFoodAround();
         star.eatBotAround();
         star.eatTailAround();
+        star.tailEatAround();
     }
     bots.forEach((bot, i) => {
         botState = i;
@@ -1555,17 +1633,6 @@ function toggleSetting() {
 
 //----------------------------------------start pro--------------------------------------------//
 
-function checkOrientation() {
-    if (window.innerHeight > window.innerWidth) {
-        alert("Please rotate your device to landscape mode.");
-    }
-}
-
-window.addEventListener("resize", checkOrientation);
-checkOrientation();
-
-
-
 settingsButton.addEventListener('click', toggleSetting);
 settingsButton.addEventListener('touchstart', toggleSetting);
 settingsButton.addEventListener('touchend', toggleSetting);
@@ -1667,13 +1734,6 @@ if (isMobile) {
             console.error("joystick-container not found!");
             return;
         }
-
-        // joystick = nipplejs.create({
-        //     zone: joystickContainer,
-        //     mode: "dynamic",
-        //     color: "blue",
-        //     size: 100
-        // });
     };
 
     // Add event listener for the save button
@@ -1695,9 +1755,6 @@ if (isMobile) {
 } else {
     document.addEventListener('mousemove', (event) => {
         if (!star) return;
-        // nameText.rotation.z = -star.cube.rotation.z;
-
-        // canvasPos = getElementPositions(webgl);
 
         mouse.x = (event.clientX / sizes.width) * 2 - 1;
         mouse.y = -(event.clientY / sizes.height) * 2 + 1;
@@ -1717,6 +1774,7 @@ if (isMobile) {
     });
 
     document.getElementById("viewReplay").addEventListener("click", function() {
+        window.alert("Here")
         document.getElementById("customAlert").style.display = 'none';
         scene.remove(star.cube);
 

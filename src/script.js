@@ -96,7 +96,7 @@ const color3 = [
 let nameText;
 let frameCount = 0;
 let runningReplay = true;
-let cubeName = "PPP";
+let cubeName = "you";
 let colorStyle = 'style1';
 let difficulty = "easy";
 let threeAngle;
@@ -261,6 +261,9 @@ class Cube {
         //tail and text
         this.tail = [];
         this.text = new Text();
+        this.name = new Text();
+        this.botName = new Text();
+        this.botBufName = '';
         this.eat = false;
         this.count = 0;
         this.direction = RAND;
@@ -313,6 +316,26 @@ class Cube {
         this.setCornerPosition();
     }
 
+    makeStarName() {
+        this.name.fontSize = 0.1;
+        this.name.fontWeight = 'bold';
+        this.name.color = '#ffffff';
+        this.name.text = cubeName === 'you' ? 'you' : cubeName;
+        this.name.position.set(this.pos[0] - 0.1, this.pos[1], 0.8);
+
+        scene.add(this.name)
+    }
+
+    makeBotName() {
+        this.botName.fontSize = 0.15;
+        this.botName.fontWeight = 'bold';
+        this.botName.color = '#ffffff';
+        // this.botName.text = 'bot';
+        this.botName.position.set(this.pos[0] - 0.1, this.pos[1], 0.5);
+
+        scene.add(this.botName)
+    }
+
     create(pos = undefined) {
         if (this.eat === false) scene.add(this.cube);
         this.setPos(pos);
@@ -353,7 +376,6 @@ class Cube {
         this.text.geometry.center();
         this.text.rotation.z = this.cube.rotation.z - Math.PI / 2
         this.cube.add(this.text);
-        // this.cube.add(this.clockFace)
     }
 
     setPos(pos = this.pos) {
@@ -530,6 +552,7 @@ class Cube {
                         playAudio(this.type);
                         scene.remove(bots[i].cube);
                         scene.remove(bots[i].text);
+                        scene.remove(bots[i].botName);
                         tailBuf = new Cube(TAIL, INITIAL);
                         tailBuf.create();
                         while (true) {
@@ -936,7 +959,7 @@ class Cube {
     drawTimer() {
         let angle;
         angle = (1 - frameBufferCount / 300) * Math.PI * 2
-        this.clock.position.set(this.pos[0], this.pos[1], 1);
+        this.clock.position.set(this.pos[0], this.pos[1], 1.1);
         this.clock.rotation.x = Math.PI / 4
         scene.add(this.clock);
         this.timerGeometry.dispose();
@@ -1059,16 +1082,18 @@ function makeBot() {
             let newBot = new Cube(BOT, INITIAL);
             newBot.create();
 
-            let botText = new Text();
-            botText.fontSize = 0.13;
-            botText.fontWeight = 'bold';
-            botText.color = '#ffffff';
-            botText.geometry.center();
-            botText.position.z = 0.3;
-            botText.text = `Bot${botIndex}`; // Assign correct label
-            botText.rotation.z = -newBot.cube.rotation.z;
+            // let botText = new Text();
+            // botText.fontSize = 0.13;
+            // botText.fontWeight = 'bold';
+            // botText.color = '#ffffff';
+            // botText.geometry.center();
+            // botText.position.z = 0.3;
+            // botText.text = `Bot${botIndex}`; // Assign correct label
+            // botText.rotation.z = -newBot.cube.rotation.z;
 
-            newBot.cube.add(botText); // Attach text to the newly created bot
+
+            newBot.botName.text = `Bot${botIndex}`;
+            // newBot.cube.add(botText); // Attach text to the newly created bot
 
             bots.push(newBot); // Store the new bot in the array
             // Randomly resize the new bot (0 to 4 times)
@@ -1164,12 +1189,12 @@ function initPro() {
     lightControl();
 
     // Create name text
-    nameText = new Text();
-    nameText.fontSize = 0.1;
-    nameText.fontWeight = 'bold';
-    nameText.color = '#ffffff';
-    nameText.text = `you`;
-    nameText.geometry.center();
+    // nameText = new Text();
+    // nameText.fontSize = 0.1;
+    // nameText.fontWeight = 'bold';
+    // nameText.color = '#ffffff';
+    // nameText.text = `you`;
+    // nameText.geometry.center();
 
     // Create a triangle marker (🔺)
     threeAngle = new Text();
@@ -1184,10 +1209,11 @@ function initPro() {
     // Create player cube
     star = new Cube(PERSON, INITIAL);
     star.create();
-    nameText.position.set(star.pos[0] - 0.2, 0, 0.6);
+    star.makeStarName();
+    // nameText.position.set(star.pos[0] - 0.2, 0, 0.6);
 
     // Attach texts to star
-    star.cube.add(nameText);
+    // star.cube.add(nameText);
     star.cube.add(threeAngle);
     makeInitialFood();
     // Hide tails and bots initially
@@ -1305,7 +1331,10 @@ function animate() {
 
 
     if (star) {
-
+        if (star.name !== null) {
+            
+        }
+        star.makeStarName();
         star.setStarBuffer();
         star.setStarPosAngle();
         star.mergeTailEngine();
@@ -1316,7 +1345,7 @@ function animate() {
             star.removeTimer();
         }
 
-        nameText.text = cubeName;
+        // nameText.text = cubeName;
 
         cameraCtrl();
     }
@@ -1342,6 +1371,7 @@ function animate() {
         bot.eatFoodAround();
         bot.eatBotAround();
         bot.eatTailAround();
+        bot.makeBotName();
     });
 
     updateTable(star, bots);
@@ -1605,7 +1635,7 @@ if (isMobile) {
 } else {
     document.addEventListener('mousemove', (event) => {
         if (!star) return;
-        nameText.rotation.z = -star.cube.rotation.z;
+        // nameText.rotation.z = -star.cube.rotation.z;
 
         // canvasPos = getElementPositions(webgl);
 

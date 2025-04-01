@@ -649,15 +649,61 @@ class Cube {
     }
 
     tailEatAround() {
-            let deltaX = 0,
-                deltaY = 0;
-            let bCrash = false;
-            let bOverlap = false;
-            let bufBots = bots.filter((bot, index) => index !== botState);
+        let deltaX = 0,
+            deltaY = 0;
+        let bCrash = false;
+        let bOverlap = false;
+        let bufBots = bots.filter((bot, index) => index !== botState);
 
-            if (this.type === PERSON) {
-                star.tail.forEach((item, i) => {
-                    bots.forEach((bot, i) => {
+        if (this.type === PERSON) {
+            star.tail.forEach((item, i) => {
+                bots.forEach((bot, i) => {
+                    if (!bot) return;
+                    const minDist = item.sizeDef;
+                    bCrash = false;
+                    bOverlap = false;
+                    deltaY = Math.abs(bot.pos[1] - item.pos[1]);
+                    deltaX = Math.abs(bot.pos[0] - item.pos[0]);
+                    if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+                        for (let j = 0; j < 4; j++) {
+                            if (isPointInRectangle(bot.corner[j * 2], bot.corner[j * 2 + 1], item.corner)) bCrash = true;
+                            if (isPointInRectangle(item.corner[j * 2], item.corner[j * 2 + 1], bot.corner)) bCrash = true;
+                        }
+                        if (isLineRectangleOverlapping([
+                                [item.corner[6], item.corner[7]],
+                                [item.corner[0], item.corner[1]]
+                            ], bot.corner)) {
+                            bOverlap = true;
+                        }
+                    }
+                    if (bCrash) {
+                        if (bot.size < item.size) {
+                            playAudio(this.type);
+                            scene.remove(bots[i].cube);
+                            scene.remove(bots[i].text);
+                            scene.remove(bots[i].botName);
+                            let buf1 = bots[i].cube;
+                            buf1.tail = [];
+                            buf1.type = FOOD;
+                            let buf2 = bots[i].cube.tail;
+                            buf2.forEach(bot => {
+                                bot.type = FOOD;
+                                buf1.push(bot)
+                            });
+                            buf1.forEach((item, i) => {
+                                item.eat = true;
+                                food.push(item);
+                            })
+                        }
+                    }
+                })
+            })
+        } else {
+            bots.forEach((item1, index) => {
+                if (!item1) return;
+                let bufBots = bots.filter((bot, index) => index !== botState);
+                item1.tail.forEach((item, i) => {
+                    bufBots.forEach((bot, i) => {
                         if (!bot) return;
                         const minDist = item.sizeDef;
                         bCrash = false;
@@ -682,718 +728,665 @@ class Cube {
                                 scene.remove(bots[i].cube);
                                 scene.remove(bots[i].text);
                                 scene.remove(bots[i].botName);
-                                let buf1 = bots[i].cube;
-                                buf1.tail = [];
-                                buf1.type = FOOD;
-                                let buf2 = bots[i].cube.tail;
-                                buf2.forEach(bot => {
-                                    bot.type = FOOD;
-                                    buf1.push(bot)
-                                });
-                                buf1.forEach((item, i) => {
-                                    item.eat = true;
-                                    food.push(item);
-                                })
+                                tailBuf = new Cube(TAIL, INITIAL);
+                                tailBuf.create();
+                                while (true) {
+                                    if (bot.size === tailBuf.size) break;
+                                    tailBuf.updateSize();
+                                }
+                                item1.connectTail(tailBuf);
+                                this.setPos();
+                                bot.eat = true;
+                                // bots.delete(i);
+                                let index = bufBots.findIndex(bufBot => bufBot === i);
+                                if (index === -1) bufBots.push(i);
+                            } else {
+                                if (bOverlap) {
+                                    let bufCenterAngle = Math.atan2((bot.pos[1] - item.pos[1]), (bot.pos[0] - item.pos[0])) - item.cube.rotation.z;
+                                    if (bufCenterAngle > 0) bot.cube.rotation.z -= Math.PI / 2000;
+                                    else if (bufCenterAngle < 0) bot.cube.rotation.z += Math.PI / 2000;
+                                    bot.pos[0] = bot.pos[0] + Math.cos(this.cube.rotation.z) * moveSpeedStar.x;
+                                    bot.pos[1] = bot.pos[1] + Math.sin(this.cube.rotation.z) * moveSpeedStar.x;
+                                    bot.setPos();
+                                    bot.setAngle(monster.cube.rotation.z);
+                                    bot.setCornerPosition();
+                                }
                             }
                         }
                     })
                 })
+            })
+        }
+    }
+
+    setStarBuffer() {
+        this.ref = ((mouse.x === 0 && mouse.y === 0)) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+        if (this.bufPos.length < 15) {
+            this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+            this.bufPos.push([...this.pos]);
+        } else {
+            let buf = this.bufPos[this.bufPos.length - 1];
+            let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
+            if (distance > 0.0004) {
+                this.edge = distance <= 0.0006;
+                this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
+                this.bufPos.push([...this.pos]);
+            }
+        }
+    }
+
+    setStarPosAngle() {
+        this.setAngle(this.bufAngle[this.bufAngle.length - 1]);
+        this.pos[0] += this.ref * mouse.x;
+        this.pos[1] += this.ref * mouse.y;
+        this.setPos();
+        this.setCornerPosition();
+    }
+
+    setBotBuffer() {
+        if (this.botRouteCount < 20) this.botRouteCount++;
+        else {
+            this.botRouteCount = 0;
+            this.findNeighbor();
+            this.detectDirection();
+        }
+
+        this.bufAngle.push(Math.atan2(this.next.y, this.next.x));
+        this.bufPos.push([this.pos[0], this.pos[1], this.pos[2]]);
+    }
+
+    setBotPosAngle() {
+        this.setAngle(this.bufAngle[this.bufAngle.length - 1]);
+        this.pos[0] += this.ref * this.next.x;
+        this.pos[1] += this.ref * this.next.y;
+        this.setPos();
+        this.setCornerPosition();
+    }
+
+    mergeTailEngine() {
+        this.tail.sort((a, b) => b.size - a.size);
+        let len = this.tail.length;
+        let i = len - 1;
+        while (i >= 0) {
+            const currentTail = this.tail[i];
+            const prevTail = this.tail[i - 1];
+            if (i === 0) {
+                if (this.eatToHeadCount > EAT_COUNT) {
+                    if (currentTail.size === this.size) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text);
+                        this.eatCount = 0;
+                        this.updateSize();
+                        this.tail = deleteFromArray(this.tail, i);
+                        len--;
+                        this.eatCount = 0;
+                        this.eatToHeadCount = 0;
+                        return;
+                    } else if (currentTail.size > this.size) {
+                        scene.remove(currentTail.cube);
+                        scene.remove(currentTail.text)
+                        while (this.size < currentTail.size) {
+                            this.updateSize();
+                        }
+                        this.tail = deleteFromArray(this.tail, i);
+                        this.eatCount = 0;
+                        this.eatToHeadCount = 0;
+                        return;
+                    }
+                    this.eatToHeadCount = 0;
+                } else this.eatToHeadCount++;
+            } else if (currentTail.size === prevTail.size) {
+                if (this.eatCount > EAT_COUNT) {
+                    scene.remove(currentTail.cube);
+                    scene.remove(currentTail.text);
+                    prevTail.updateSize();
+                    this.tail = deleteFromArray(this.tail, i);
+                    this.eatCount = 0;
+                    this.eatToHeadCount = 0;
+                    len--;
+                    return;
+                } else {
+                    this.eatCount++;
+                }
+            }
+            i--;
+        }
+    }
+
+    traceEngine() {
+        if (this.bufAngle.length > 2000) this.bufAngle.splice(0, this.bufAngle.length - 2000);
+        if (this.bufPos.length > 2000) this.bufPos.splice(0, this.bufPos.length - 2000);
+
+        this.tail.forEach((item, j) => {
+            let traceHis;
+            if (mouseCount === 0) {
+                if (j > 0) {
+                    switch (this.tail[j - 1].size) {
+                        case 2048:
+                            traceHis = 20;
+                            break;
+                        case 1024:
+                            traceHis = 19;
+                            break;
+                        case 512:
+                            traceHis = 19;
+                            break;
+                        case 256:
+                            traceHis = 18;
+                            break;
+                        case 128:
+                            traceHis = 18;
+                            break;
+                        case 64:
+                            traceHis = 17;
+                            break;
+                        case 32:
+                            traceHis = 16;
+                            break;
+                        case 16:
+                            traceHis = 15;
+                            break;
+                        case 8:
+                            traceHis = 14;
+                            break;
+                        case 2:
+                        case 4:
+                            traceHis = 13;
+                            break;
+                        default:
+                            traceHis = 21;
+                            break;
+                    }
+                    if (this.edge) traceHis += 2;
+                } else {
+                    switch (this.size) {
+                        case 2048:
+                            traceHis = 20;
+                            break;
+                        case 1024:
+                            traceHis = 19;
+                            break;
+                        case 512:
+                            traceHis = 19;
+                            break;
+                        case 256:
+                            traceHis = 18;
+                            break;
+                        case 128:
+                            traceHis = 18;
+                            break;
+                        case 64:
+                            traceHis = 17;
+                            break;
+                        case 32:
+                            traceHis = 16;
+                            break;
+                        case 16:
+                            traceHis = 15;
+                            break;
+                        case 8:
+                            traceHis = 14;
+                            break;
+                        case 2:
+                        case 4:
+                            traceHis = 13;
+                            break;
+                        default:
+                            traceHis = 21;
+                            break;
+                    }
+                    if (this.edge) traceHis += 2;
+                }
+
+                if (moveSpeedStar.x > moveSpeed.x) traceHis -= 3;
+            }
+            if (j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
+            else item.arrIndex = this.bufAngle.length - traceHis;
+
+            item.setAngle(this.bufAngle[item.arrIndex]);
+
+            if (this.bufPos[item.arrIndex]) {
+                let [x, y, z] = this.bufPos[item.arrIndex];
+                item.pos = [x, y, z];
+                item.setPos();
+            }
+            item.setCornerPosition();
+        });
+    }
+
+    findNeighbor() {
+        this.food = [];
+        this.enemies = [];
+        let neighbors = [...bots, ...food, star];
+        countEnemy = 0;
+
+        // Define boundaries once
+        const rect = {
+            left: this.pos[0] - scaledSize.width,
+            right: this.pos[0] + scaledSize.width,
+            top: this.pos[1] + scaledSize.height,
+            bottom: this.pos[1] - scaledSize.height
+        };
+
+        neighbors.forEach((neighbor, i) => {
+            if (botState === i) return;
+            if (!neighbor) return;
+            const nx = neighbor.pos[0];
+            const ny = neighbor.pos[1];
+
+            if (nx > rect.left && nx < rect.right && ny < rect.top && ny > rect.bottom) {
+                const dx = nx - this.pos[0];
+                const dy = ny - this.pos[1];
+                const distance = dx * dx + dy * dy;
+                const theta = dx !== 0 ? dy / dx : 0;
+
+                if (neighbor.size > this.size && (neighbor.type === BOT || neighbor.type === PERSON)) {
+                    this.enemies.push({ size: neighbor.size, x: dx, y: dy, distance, theta });
+                } else if (neighbor.size < this.size) {
+                    this.food.push({ size: neighbor.size, x: dx, y: dy, distance, theta });
+                }
+
+                countEnemy++;
+            }
+        });
+    }
+
+    detectDirection() {
+        const prob5to5 = difficulty === 'easy' ? Math.random() <= 0.15 : difficulty === 'medium' ? Math.random() < 0.5 : Math.random() < 0.9; // 1.5 out of 10
+        const prob3to7 = difficulty === 'easy' ? Math.random() <= 0.3 : difficulty === 'medium' ? Math.random() < 0.5 : Math.random() < 0.9; // 3 out of 10
+
+        if (this.enemies.length === 0) {
+            if (this.food.length === 0) {
+                this.toRandom();
+                this.direction = RAND;
             } else {
-                bots.forEach((item1, index) => {
-                            if (!item1) return;
-                            let bufBots = bots.filter((bot, index) => index !== botState);
-                            item1.tail.forEach((item, i) => {
-                                        bufBots.forEach((bot, i) => {
-                                                if (!bot) return;
-                                                const minDist = item.sizeDef;
-                                                let neighbors = bots.filter((item, index) => index !== botState);
-                                                neighbors.forEach((item, key) => {
-                                                    item.tail.forEach((eachTail, index) => {
-                                                        bots.forEach((monster, i) => {
-                                                            if (bufBots.length !== 0) {
-                                                                bots = deleteIndexesFromArray(bots, bufBots);
-                                                                bufBots = [];
-                                                            }
-                                                            if (i !== botState) {
-                                                                const minDist = monster.sizeDef;
-                                                                bCrash = false;
-                                                                bOverlap = false;
-                                                                deltaY = monster.pos[1] - eachTail.pos[1];
-                                                                if (deltaY < 0) deltaY = -deltaY;
-                                                                deltaX = monster.pos[0] - eachTail.pos[0];
-                                                                if (deltaX < 0) deltaX = -deltaX;
-                                                                if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
-
-                                                                    for (let j = 0; j < 4; j++) {
-                                                                        if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], eachTail.corner)) bCrash = true;
-                                                                        if (isPointInRectangle(eachTail.corner[j * 2], eachTail.corner[j * 2 + 1], monster.corner)) bCrash = true;
-                                                                    }
-                                                                    if (isLineRectangleOverlapping([
-                                                                            [eachTail.corner[6], eachTail.corner[7]],
-                                                                            [eachTail.corner[0], eachTail.corner[1]]
-                                                                        ], monster.corner)) {
-                                                                        bOverlap = true;
-                                                                    }
-                                                                }
-                                                                if (bCrash) {
-                                                                    if (monster.size < eachTail.size) {
-                                                                        playAudio(eachTail.type);
-                                                                        scene.remove(bots[i].botName);
-                                                                        scene.remove(bots[i].cube);
-                                                                        scene.remove(bots[i].text);
-                                                                        bots[i] = null;
-                                                                        tailBuf = new Cube(TAIL, INITIAL);
-                                                                        render();
-                                                                        tailBuf.create();
-                                                                        while (true) {
-                                                                            if (monster.size === tailBuf.size) break;
-                                                                            tailBuf.updateSize();
-                                                                        }
-                                                                        this.connectTail(tailBuf);
-                                                                        this.setPos();
-                                                                        monster.eat = true;
-                                                                        // bots.delete(i);
-                                                                        let index = bufBots.findIndex(bufBot => bufBot === i);
-                                                                        if (index === -1) bufBots.push(i);
-                                                                        return;
-                                                                    }
-                                                                }
-                                                            }
-                                                        });
-                                                    })
-                                                })
-
-
-                                            }
-
-                                            setStarBuffer() {
-                                                this.ref = ((mouse.x === 0 && mouse.y === 0)) ? 1 : moveSpeedStar.x / Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
-                                                if (this.bufPos.length < 15) {
-                                                    this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-                                                    this.bufPos.push([...this.pos]);
-                                                } else {
-                                                    let buf = this.bufPos[this.bufPos.length - 1];
-                                                    let distance = (buf[0] - this.pos[0]) ** 2 + (buf[1] - this.pos[1]) ** 2;
-                                                    if (distance > 0.0004) {
-                                                        this.edge = distance <= 0.0006;
-                                                        this.bufAngle.push(Math.atan2(mouse.y, mouse.x));
-                                                        this.bufPos.push([...this.pos]);
-                                                    }
-                                                }
-                                            }
-
-                                            setStarPosAngle() {
-                                                this.setAngle(this.bufAngle[this.bufAngle.length - 1]);
-                                                this.pos[0] += this.ref * mouse.x;
-                                                this.pos[1] += this.ref * mouse.y;
-                                                this.setPos();
-                                                this.setCornerPosition();
-                                            }
-
-                                            setBotBuffer() {
-                                                if (this.botRouteCount < 20) this.botRouteCount++;
-                                                else {
-                                                    this.botRouteCount = 0;
-                                                    this.findNeighbor();
-                                                    this.detectDirection();
-                                                }
-
-                                                this.bufAngle.push(Math.atan2(this.next.y, this.next.x));
-                                                this.bufPos.push([this.pos[0], this.pos[1], this.pos[2]]);
-                                            }
-
-                                            setBotPosAngle() {
-                                                this.setAngle(this.bufAngle[this.bufAngle.length - 1]);
-                                                this.pos[0] += this.ref * this.next.x;
-                                                this.pos[1] += this.ref * this.next.y;
-                                                this.setPos();
-                                                this.setCornerPosition();
-                                            }
-
-                                            mergeTailEngine() {
-                                                this.tail.sort((a, b) => b.size - a.size);
-                                                let len = this.tail.length;
-                                                let i = len - 1;
-                                                while (i >= 0) {
-                                                    const currentTail = this.tail[i];
-                                                    const prevTail = this.tail[i - 1];
-                                                    if (i === 0) {
-                                                        if (this.eatToHeadCount > EAT_COUNT) {
-                                                            if (currentTail.size === this.size) {
-                                                                scene.remove(currentTail.cube);
-                                                                scene.remove(currentTail.text);
-                                                                this.eatCount = 0;
-                                                                this.updateSize();
-                                                                this.tail = deleteFromArray(this.tail, i);
-                                                                len--;
-                                                                this.eatCount = 0;
-                                                                this.eatToHeadCount = 0;
-                                                                return;
-                                                            } else if (currentTail.size > this.size) {
-                                                                scene.remove(currentTail.cube);
-                                                                scene.remove(currentTail.text)
-                                                                while (this.size < currentTail.size) {
-                                                                    this.updateSize();
-                                                                }
-                                                                this.tail = deleteFromArray(this.tail, i);
-                                                                this.eatCount = 0;
-                                                                this.eatToHeadCount = 0;
-                                                                return;
-                                                            }
-                                                            this.eatToHeadCount = 0;
-                                                        } else this.eatToHeadCount++;
-                                                    } else if (currentTail.size === prevTail.size) {
-                                                        if (this.eatCount > EAT_COUNT) {
-                                                            scene.remove(currentTail.cube);
-                                                            scene.remove(currentTail.text);
-                                                            prevTail.updateSize();
-                                                            this.tail = deleteFromArray(this.tail, i);
-                                                            this.eatCount = 0;
-                                                            this.eatToHeadCount = 0;
-                                                            len--;
-                                                            return;
-                                                        } else {
-                                                            this.eatCount++;
-                                                        }
-                                                    }
-                                                    i--;
-                                                }
-                                            }
-
-                                            traceEngine() {
-                                                if (this.bufAngle.length > 2000) this.bufAngle.splice(0, this.bufAngle.length - 2000);
-                                                if (this.bufPos.length > 2000) this.bufPos.splice(0, this.bufPos.length - 2000);
-
-                                                this.tail.forEach((item, j) => {
-                                                    let traceHis;
-                                                    if (mouseCount === 0) {
-                                                        if (j > 0) {
-                                                            switch (this.tail[j - 1].size) {
-                                                                case 2048:
-                                                                    traceHis = 20;
-                                                                    break;
-                                                                case 1024:
-                                                                    traceHis = 19;
-                                                                    break;
-                                                                case 512:
-                                                                    traceHis = 19;
-                                                                    break;
-                                                                case 256:
-                                                                    traceHis = 18;
-                                                                    break;
-                                                                case 128:
-                                                                    traceHis = 18;
-                                                                    break;
-                                                                case 64:
-                                                                    traceHis = 17;
-                                                                    break;
-                                                                case 32:
-                                                                    traceHis = 16;
-                                                                    break;
-                                                                case 16:
-                                                                    traceHis = 15;
-                                                                    break;
-                                                                case 8:
-                                                                    traceHis = 14;
-                                                                    break;
-                                                                case 2:
-                                                                case 4:
-                                                                    traceHis = 13;
-                                                                    break;
-                                                                default:
-                                                                    traceHis = 21;
-                                                                    break;
-                                                            }
-                                                            if (this.edge) traceHis += 2;
-                                                        } else {
-                                                            switch (this.size) {
-                                                                case 2048:
-                                                                    traceHis = 20;
-                                                                    break;
-                                                                case 1024:
-                                                                    traceHis = 19;
-                                                                    break;
-                                                                case 512:
-                                                                    traceHis = 19;
-                                                                    break;
-                                                                case 256:
-                                                                    traceHis = 18;
-                                                                    break;
-                                                                case 128:
-                                                                    traceHis = 18;
-                                                                    break;
-                                                                case 64:
-                                                                    traceHis = 17;
-                                                                    break;
-                                                                case 32:
-                                                                    traceHis = 16;
-                                                                    break;
-                                                                case 16:
-                                                                    traceHis = 15;
-                                                                    break;
-                                                                case 8:
-                                                                    traceHis = 14;
-                                                                    break;
-                                                                case 2:
-                                                                case 4:
-                                                                    traceHis = 13;
-                                                                    break;
-                                                                default:
-                                                                    traceHis = 21;
-                                                                    break;
-                                                            }
-                                                            if (this.edge) traceHis += 2;
-                                                        }
-
-                                                        if (moveSpeedStar.x > moveSpeed.x) traceHis -= 3;
-                                                    }
-                                                    if (j > 0) item.arrIndex = this.tail[j - 1].arrIndex - traceHis;
-                                                    else item.arrIndex = this.bufAngle.length - traceHis;
-
-                                                    item.setAngle(this.bufAngle[item.arrIndex]);
-
-                                                    if (this.bufPos[item.arrIndex]) {
-                                                        let [x, y, z] = this.bufPos[item.arrIndex];
-                                                        item.pos = [x, y, z];
-                                                        item.setPos();
-                                                    }
-                                                    item.setCornerPosition();
-                                                });
-                                            }
-
-                                            findNeighbor() {
-                                                this.food = [];
-                                                this.enemies = [];
-                                                let neighbors = [...bots, ...food, star];
-                                                countEnemy = 0;
-
-                                                // Define boundaries once
-                                                const rect = {
-                                                    left: this.pos[0] - scaledSize.width,
-                                                    right: this.pos[0] + scaledSize.width,
-                                                    top: this.pos[1] + scaledSize.height,
-                                                    bottom: this.pos[1] - scaledSize.height
-                                                };
-
-                                                neighbors.forEach((neighbor, i) => {
-                                                    if (botState === i) return;
-                                                    if (!neighbor) return;
-                                                    const nx = neighbor.pos[0];
-                                                    const ny = neighbor.pos[1];
-
-                                                    if (nx > rect.left && nx < rect.right && ny < rect.top && ny > rect.bottom) {
-                                                        const dx = nx - this.pos[0];
-                                                        const dy = ny - this.pos[1];
-                                                        const distance = dx * dx + dy * dy;
-                                                        const theta = dx !== 0 ? dy / dx : 0;
-
-                                                        if (neighbor.size > this.size && (neighbor.type === BOT || neighbor.type === PERSON)) {
-                                                            this.enemies.push({ size: neighbor.size, x: dx, y: dy, distance, theta });
-                                                        } else if (neighbor.size < this.size) {
-                                                            this.food.push({ size: neighbor.size, x: dx, y: dy, distance, theta });
-                                                        }
-
-                                                        countEnemy++;
-                                                    }
-                                                });
-                                            }
-
-                                            detectDirection() {
-                                                const prob5to5 = difficulty === 'easy' ? Math.random() <= 0.15 : difficulty === 'medium' ? Math.random() < 0.5 : Math.random() < 0.9; // 1.5 out of 10
-                                                const prob3to7 = difficulty === 'easy' ? Math.random() <= 0.3 : difficulty === 'medium' ? Math.random() < 0.5 : Math.random() < 0.9; // 3 out of 10
-
-                                                if (this.enemies.length === 0) {
-                                                    if (this.food.length === 0) {
-                                                        this.toRandom();
-                                                        this.direction = RAND;
-                                                    } else {
-                                                        this.direction = prob5to5 ? DISTANCE : SIZE;
-                                                        prob5to5 ? this.toDistance() : this.toSize();
-                                                    }
-                                                    return;
-                                                }
-
-                                                if (this.food.length === 0 || prob3to7) {
-                                                    this.toAntiDistance();
-                                                    this.direction = ANTI_DISTANCE;
-                                                } else {
-                                                    this.direction = prob5to5 ? DISTANCE : SIZE;
-                                                    prob5to5 ? this.toDistance() : this.toSize();
-                                                }
-                                            }
-
-                                            toSize() {
-                                                if (!this.food.length) return;
-
-                                                let def = this.food.reduce((max, item) => (item.size > max.size ? item : max), this.food[0]);
-
-                                                const theta = def.theta;
-                                                this.next.x = def.x > 0 ? 1 : -1;
-                                                this.next.y = def.x > 0 ? theta : -theta;
-
-                                                this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
-                                            }
-
-                                            toDistance() {
-                                                if (!this.food.length) return;
-
-                                                let def = this.food.reduce((min, item) => (item.distance < min.distance ? item : min), this.food[0]);
-
-                                                const theta = def.theta;
-                                                this.next.x = def.x > 0 ? 1 : -1;
-                                                this.next.y = def.x > 0 ? theta : -theta;
-
-                                                this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
-                                            }
-
-                                            toAntiDistance() {
-                                                if (!this.enemies.length) return;
-
-                                                let def = this.enemies.reduce((min, item) => (item.distance < min.distance ? item : min), this.enemies[0]);
-
-                                                this.next.x = def.x > 0 ? -1 : 1;
-                                                this.next.y = def.x > 0 ? -def.theta : def.theta;
-
-                                                if (this.pos[0] === maxScaledWidth) this.next.x = -Math.random();
-                                                if (this.pos[0] === -maxScaledWidth) this.next.x = Math.random();
-                                                if (this.pos[1] === maxScaledHeight) this.next.y = -Math.random();
-                                                if (this.pos[1] === -maxScaledHeight) this.next.y = Math.random();
-
-                                                this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
-                                            }
-
-                                            toRandom() {
-                                                this.next.x += (Math.random() - 0.5);
-                                                this.next.y += (Math.random() - 0.5);
-
-                                                // Adjust movement at screen edges
-                                                if (this.pos[0] >= maxScaledWidth) this.next.x = -Math.random();
-                                                if (this.pos[0] <= -maxScaledWidth) this.next.x = Math.random();
-                                                if (this.pos[1] >= maxScaledHeight) this.next.y = -Math.random();
-                                                if (this.pos[1] <= -maxScaledHeight) this.next.y = Math.random();
-
-                                                // Prevent zero movement
-                                                if (this.next.x === 0 && this.next.y === 0) {
-                                                    this.next.x = Math.random() * 0.1 - 0.05; // Small random value
-                                                    this.next.y = Math.random() * 0.1 - 0.05;
-                                                }
-
-                                                this.ref = moveSpeed.x / Math.sqrt(this.next.x ** 2 + this.next.y ** 2);
-                                            }
-
-                                            drawTimer() {
-                                                let angle;
-                                                angle = (1 - frameBufferCount / 300) * Math.PI * 2
-                                                this.clock.position.set(this.pos[0], this.pos[1], 1.1);
-                                                this.clock.rotation.x = Math.PI / 4
-                                                scene.add(this.clock);
-                                                this.timerGeometry.dispose();
-                                                this.timerGeometry.copy(new THREE.RingGeometry(0, this.sizeDef / 4, 64, 1, 0, angle)); // Adjust sector
-                                            }
-
-                                            removeTimer() {
-                                                scene.remove(this.clock);
-                                            }
-                                        }
-
-                                        function addPlane() {
-                                            const width = maxScaledWidth * 2 + 0.5;
-                                            const height = maxScaledHeight * 2 + 0.5;
-
-                                            // Create Plane
-                                            const geometry = new THREE.PlaneGeometry(width, height);
-                                            const material = new THREE.MeshBasicMaterial({
-                                                color: 0x105188, // Hex color is more efficient
-                                                side: THREE.DoubleSide,
-                                                transparent: false,
-                                                wireframe: false,
-                                            });
-
-                                            const plane = new THREE.Mesh(geometry, material);
-                                            scene.add(plane);
-                                        }
-
-                                        function addWall() {
-                                            topWall = new THREE.Mesh(geometryWall, materialWall);
-                                            bottomWall = new THREE.Mesh(geometryWall, materialWall);
-                                            leftWall = new THREE.Mesh(geometryWallVertical, materialWall);
-                                            rightWall = new THREE.Mesh(geometryWallVertical, materialWall);
-                                            scene.add(topWall);
-                                            scene.add(bottomWall);
-                                            scene.add(leftWall);
-                                            scene.add(rightWall);
-                                            topWall.position.set(0, maxScaledHeight + wallSize / 2 + 0.2, 0.1);
-                                            bottomWall.position.set(0, -(maxScaledHeight + wallSize / 2 + 0.2), 0.1);
-                                            leftWall.position.set(-(maxScaledWidth + wallSize / 2 + 0.2), 0, 0.1);
-                                            rightWall.position.set(maxScaledWidth + wallSize / 2 + 0.2, 0, 0.1);
-
-
-                                            topBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
-                                            bottomBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
-                                            leftBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
-                                            rightBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
-                                            scene.add(topBoundary);
-                                            scene.add(bottomBoundary);
-                                            scene.add(leftBoundary);
-                                            scene.add(rightBoundary);
-                                            topBoundary.position.set(0, maxScaledHeight + wallSize + boundarySize / 2 + 0.1, 0.1);
-                                            bottomBoundary.position.set(0, -(maxScaledHeight + wallSize + boundarySize / 2 + 0.1), 0.1);
-                                            leftBoundary.position.set(-(maxScaledWidth + wallSize + boundarySize / 2 + 0.2), 0, 0.1);
-                                            rightBoundary.position.set(maxScaledWidth + wallSize + boundarySize / 2 + 0.2, 0, 0.1);
-                                        }
-
-                                        function drawX() {
-                                            const material = new THREE.LineDashedMaterial({
-                                                color: 'rgb(123,182,255)',
-                                                dashSize: 0.04, // Length of dashes (small for dots)
-                                                gapSize: 0.5, // Space between dashes (adjust for dot effect)
-                                                linewidth: (window.innerWidth > 767) ? 20 : 3
-                                            });
-                                            const yCount = maxScaledHeight;
-
-                                            for (let i = -yCount; i < yCount; i += 0.5) {
-                                                const points = [
-                                                    new THREE.Vector3(-1 * maxScaledWidth + 0.03, i, 0),
-                                                    new THREE.Vector3(maxScaledWidth - 0.03, i, 0)
-                                                ];
-                                                const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-                                                lineX[i + yCount] = new THREE.Line(geometry, material);
-                                                lineX[i + yCount].position.z = 0.01;
-                                                lineX[i + yCount].computeLineDistances();
-                                                scene.add(lineX[i + yCount]);
-                                            }
-                                        }
-
-                                        function render() {
-                                            renderer.setSize(sizes.width, sizes.height);
-                                            renderer.render(scene, camera);
-                                        }
-
-                                        function cameraCtrl() {
-                                            if (!star || !star.pos) { return; }
-
-                                            const [x, y] = star.pos; // Destructure for better readability
-
-                                            if (isMobile) camera.position.set(x, y - 2, 3);
-                                            else camera.position.set(x, y - 3, 5);
-                                            camera.rotation.x = Math.PI / 7;
-                                        }
-
-                                        function makeInitialFood() {
-                                            for (let i = 0; i < MAX_INIT_FOOD; i++) {
-                                                const item = new Cube(FOOD, INITIAL);
-                                                item.create();
-                                                food.push(item);
-                                            }
-                                        }
-
-                                        function makeInitHideTail(cube) {
-                                            for (let i = 0; i < 10; i++) {
-                                                const tailSegment = new Cube(TAIL, INITIAL);
-                                                tailSegment.create();
-                                                cube.newtail.push(tailSegment);
-                                                scene.remove(tailSegment.cube);
-                                            }
-                                        }
-
-                                        function makeInitHideBots() {
-                                            for (let i = 0; i < MAX_BOT; i++) {
-                                                const bot = new Cube(BOT, INITIAL);
-                                                bot.create();
-                                                replayBots.push(bot);
-                                                scene.remove(bot.cube);
-                                            }
-                                        }
-
-                                        function makeFood(size = 2) {
-                                            if (cycleFood < TIME_SPACE_FOOD) {
-                                                cycleFood++;
-                                                return;
-                                            }
-
-                                            cycleFood = 0;
-
-                                            // if (star.size > 256) MAX_FOOD = 3;
-                                            if (bProduce && food.length < MAX_FOOD) {
-                                                const newFood = new Cube(FOOD, INITIAL);
-                                                newFood.create();
-                                                food.push(newFood);
-
-                                                // const sizeUpdates = (Math.random() * 5) | 0; // Random number 0-4
-                                                const sizeUpdates = (Math.random() * 4 * Math.log2(size)) + 1;
-                                                for (let i = 0; i < sizeUpdates; i++) {
-                                                    newFood.updateSize();
-                                                }
-                                            }
-                                        }
-
-                                        function makeBot() {
-                                            if (cycleBot < TIME_SPACE_BOT) {
-                                                cycleBot++;
-                                            } else {
-                                                cycleBot = 0;
-                                                if (bots.length < MAX_BOT) {
-                                                    let botIndex = bots.length; // Track the index of the new bot
-                                                    let newBot = new Cube(BOT, INITIAL);
-                                                    newBot.create();
-
-                                                    newBot.botName.text = `Bot${botIndex}`;
-                                                    // newBot.cube.add(botText); // Attach text to the newly created bot
-
-                                                    bots.push(newBot); // Store the new bot in the array
-                                                    // Randomly resize the new bot (0 to 4 times)
-                                                    let buf = Math.floor(Math.random() * 5);
-                                                    for (let i = 0; i < buf; i++) {
-                                                        newBot.updateSize();
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        function lightControl() {
-                                            const lightPositions = [
-                                                [0, 300, 200],
-                                                [0, -40, 140],
-                                                [400, -300, 150],
-                                                [-400, -300, 50]
-                                            ];
-
-                                            lightPositions.forEach(pos => {
-                                                const light = new THREE.DirectionalLight(0xffffff, 1);
-                                                light.position.set(...pos);
-                                                scene.add(light);
-                                            });
-                                        }
-
-                                        function extract(cube) {
-                                            let buf = {
-                                                x: 0,
-                                                y: 0,
-                                                direction: 0,
-                                                size: 2,
-                                                tail: [],
-                                                text: ''
-                                            }
-                                            buf.x = cube.pos[0];
-                                            buf.y = cube.pos[1];
-                                            buf.direction = cube.cube.rotation.z;
-                                            buf.size = cube.size;
-                                            buf.text = cube.text;
-                                            if (cube.tail.length !== 0) {
-                                                cube.tail.forEach(item => buf.tail.push(extract(item)));
-                                            }
-                                            return buf;
-                                        }
-
-                                        function restore(cube, info) {
-                                            scene.add(cube.cube);
-                                            cube.pos[0] = info.x;
-                                            cube.pos[1] = info.y;
-                                            cube.cube.rotation.z = info.direction;
-                                            cube.setPos();
-                                            while (true) {
-                                                if (cube.size === info.size) break;
-                                                else if (cube.size < info.size) cube.updateSize();
-                                                else cube.smallerSize();
-                                            }
-                                            if (cube.newtail.length !== 0) {
-                                                cube.newtail.forEach(item => {
-                                                    scene.remove(item.cube)
-                                                })
-
-                                                info.tail.forEach((item, i) => {
-                                                    cube.newtail[i].pos[0] = item.x;
-                                                    cube.newtail[i].pos[1] = item.y;
-                                                    cube.newtail[i].cube.rotation.z = item.direction;
-                                                    cube.newtail[i].setPos();
-                                                    while (true) {
-                                                        if (cube.newtail[i].size === item.size) break;
-                                                        else if (cube.newtail[i].size < item.size) cube.newtail[i].updateSize();
-                                                        else cube.newtail[i].smallerSize();
-                                                    }
-                                                    scene.add(cube.newtail[i].cube);
-                                                });
-                                            }
-                                            return cube;
-                                        }
-
-                                        function setHistory() {
-                                            if (!star || !bots || !food) return; // Ensure data exists
-
-                                            let tStar = extract(star);
-                                            let tBot = bots.map(bot => extract(bot)); // Use .map() instead of .forEach()
-                                            let tFood = food.map(foodItem => extract(foodItem));
-
-                                            trace.push({ star: tStar, bot: tBot, food: tFood });
-                                        }
-
-                                        function initPro() {
-                                            lightControl();
-
-                                            // Create name text
-                                            // nameText = new Text();
-                                            // nameText.fontSize = 0.1;
-                                            // nameText.fontWeight = 'bold';
-                                            // nameText.color = '#ffffff';
-                                            // nameText.text = `you`;
-                                            // nameText.geometry.center();
-
-                                            // Create a triangle marker (🔺)
-                                            threeAngle = new Text();
-                                            threeAngle.fontSize = 0.4;
-                                            threeAngle.fontWeight = 'bold';
-                                            threeAngle.color = '#ffffff';
-                                            threeAngle.fillOpacity = 0.7;
-                                            threeAngle.position.set(0.6, 0.25, 0);
-                                            threeAngle.rotation.z = -Math.PI / 2;
-                                            threeAngle.text = `🔺`;
-
-                                            // Create player cube
-                                            star = new Cube(PERSON, INITIAL);
-                                            star.create();
-                                            star.makeStarName();
-                                            // nameText.position.set(star.pos[0] - 0.2, 0, 0.6);
-
-                                            // Attach texts to star
-                                            // star.cube.add(nameText);
-                                            star.cube.add(threeAngle);
-                                            makeInitialFood();
-                                            // Hide tails and bots initially
-                                            makeInitHideTail(star);
-                                            makeInitHideBots();
-                                            replayBots.forEach(bot => makeInitHideTail(bot));
-
-                                            // Add additional elements
-                                            addPlane();
-                                            addWall();
-                                            drawX();
-                                        }
-
-                                        function updateTable(person, bots) {
-                                            if (cycleTable < TIME_SPACE_TABLE) {
-                                                cycleTable++;
-                                                return;
-                                            }
-
-                                            cycleTable = 0; // Reset cycleTable after update
-
-                                            const updateCube = bots.map((bot, index) => ({
-                                                cube: bot,
-                                                id: `Bot ${index}`
-                                            })).concat({ cube: person, id: "You" });
-
-                                            // Sort cubes by size in descending order and take the top 5
-                                            const sortData = updateCube.sort((a, b) => b.cube.size - a.cube.size).slice(0, 5);
-
-                                            const tbody = document.querySelector('#leaderboard tbody');
-                                            tbody.innerHTML = ''; // Clear the table before updating
-
-                                            sortData.forEach((data, i) => {
-                                                        const row = document.createElement('tr');
-                                                        row.classList.toggle("highlight", data.id === "You"); // Highlight player row
-
-                                                        row.innerHTML = `
+                this.direction = prob5to5 ? DISTANCE : SIZE;
+                prob5to5 ? this.toDistance() : this.toSize();
+            }
+            return;
+        }
+
+        if (this.food.length === 0 || prob3to7) {
+            this.toAntiDistance();
+            this.direction = ANTI_DISTANCE;
+        } else {
+            this.direction = prob5to5 ? DISTANCE : SIZE;
+            prob5to5 ? this.toDistance() : this.toSize();
+        }
+    }
+
+    toSize() {
+        if (!this.food.length) return;
+
+        let def = this.food.reduce((max, item) => (item.size > max.size ? item : max), this.food[0]);
+
+        const theta = def.theta;
+        this.next.x = def.x > 0 ? 1 : -1;
+        this.next.y = def.x > 0 ? theta : -theta;
+
+        this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
+    }
+
+    toDistance() {
+        if (!this.food.length) return;
+
+        let def = this.food.reduce((min, item) => (item.distance < min.distance ? item : min), this.food[0]);
+
+        const theta = def.theta;
+        this.next.x = def.x > 0 ? 1 : -1;
+        this.next.y = def.x > 0 ? theta : -theta;
+
+        this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
+    }
+
+    toAntiDistance() {
+        if (!this.enemies.length) return;
+
+        let def = this.enemies.reduce((min, item) => (item.distance < min.distance ? item : min), this.enemies[0]);
+
+        this.next.x = def.x > 0 ? -1 : 1;
+        this.next.y = def.x > 0 ? -def.theta : def.theta;
+
+        if (this.pos[0] === maxScaledWidth) this.next.x = -Math.random();
+        if (this.pos[0] === -maxScaledWidth) this.next.x = Math.random();
+        if (this.pos[1] === maxScaledHeight) this.next.y = -Math.random();
+        if (this.pos[1] === -maxScaledHeight) this.next.y = Math.random();
+
+        this.ref = moveSpeed.x / Math.sqrt(1 + this.next.y ** 2);
+    }
+
+    toRandom() {
+        this.next.x += (Math.random() - 0.5);
+        this.next.y += (Math.random() - 0.5);
+
+        // Adjust movement at screen edges
+        if (this.pos[0] >= maxScaledWidth) this.next.x = -Math.random();
+        if (this.pos[0] <= -maxScaledWidth) this.next.x = Math.random();
+        if (this.pos[1] >= maxScaledHeight) this.next.y = -Math.random();
+        if (this.pos[1] <= -maxScaledHeight) this.next.y = Math.random();
+
+        // Prevent zero movement
+        if (this.next.x === 0 && this.next.y === 0) {
+            this.next.x = Math.random() * 0.1 - 0.05; // Small random value
+            this.next.y = Math.random() * 0.1 - 0.05;
+        }
+
+        this.ref = moveSpeed.x / Math.sqrt(this.next.x ** 2 + this.next.y ** 2);
+    }
+
+    drawTimer() {
+        let angle;
+        angle = (1 - frameBufferCount / 300) * Math.PI * 2
+        this.clock.position.set(this.pos[0], this.pos[1], 1.1);
+        this.clock.rotation.x = Math.PI / 4
+        scene.add(this.clock);
+        this.timerGeometry.dispose();
+        this.timerGeometry.copy(new THREE.RingGeometry(0, this.sizeDef / 4, 64, 1, 0, angle)); // Adjust sector
+    }
+
+    removeTimer() {
+        scene.remove(this.clock);
+    }
+}
+
+function addPlane() {
+    const width = maxScaledWidth * 2 + 0.5;
+    const height = maxScaledHeight * 2 + 0.5;
+
+    // Create Plane
+    const geometry = new THREE.PlaneGeometry(width, height);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0x105188, // Hex color is more efficient
+        side: THREE.DoubleSide,
+        transparent: false,
+        wireframe: false,
+    });
+
+    const plane = new THREE.Mesh(geometry, material);
+    scene.add(plane);
+}
+
+function addWall() {
+    topWall = new THREE.Mesh(geometryWall, materialWall);
+    bottomWall = new THREE.Mesh(geometryWall, materialWall);
+    leftWall = new THREE.Mesh(geometryWallVertical, materialWall);
+    rightWall = new THREE.Mesh(geometryWallVertical, materialWall);
+    scene.add(topWall);
+    scene.add(bottomWall);
+    scene.add(leftWall);
+    scene.add(rightWall);
+    topWall.position.set(0, maxScaledHeight + wallSize / 2 + 0.2, 0.1);
+    bottomWall.position.set(0, -(maxScaledHeight + wallSize / 2 + 0.2), 0.1);
+    leftWall.position.set(-(maxScaledWidth + wallSize / 2 + 0.2), 0, 0.1);
+    rightWall.position.set(maxScaledWidth + wallSize / 2 + 0.2, 0, 0.1);
+
+
+    topBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
+    bottomBoundary = new THREE.Mesh(geometryBoundary, materialBoundary);
+    leftBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
+    rightBoundary = new THREE.Mesh(geometryBoundaryVertical, materialBoundary);
+    scene.add(topBoundary);
+    scene.add(bottomBoundary);
+    scene.add(leftBoundary);
+    scene.add(rightBoundary);
+    topBoundary.position.set(0, maxScaledHeight + wallSize + boundarySize / 2 + 0.1, 0.1);
+    bottomBoundary.position.set(0, -(maxScaledHeight + wallSize + boundarySize / 2 + 0.1), 0.1);
+    leftBoundary.position.set(-(maxScaledWidth + wallSize + boundarySize / 2 + 0.2), 0, 0.1);
+    rightBoundary.position.set(maxScaledWidth + wallSize + boundarySize / 2 + 0.2, 0, 0.1);
+}
+
+function drawX() {
+    const material = new THREE.LineDashedMaterial({
+        color: 'rgb(123,182,255)',
+        dashSize: 0.04, // Length of dashes (small for dots)
+        gapSize: 0.5, // Space between dashes (adjust for dot effect)
+        linewidth: (window.innerWidth > 767) ? 20 : 3
+    });
+    const yCount = maxScaledHeight;
+
+    for (let i = -yCount; i < yCount; i += 0.5) {
+        const points = [
+            new THREE.Vector3(-1 * maxScaledWidth + 0.03, i, 0),
+            new THREE.Vector3(maxScaledWidth - 0.03, i, 0)
+        ];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+        lineX[i + yCount] = new THREE.Line(geometry, material);
+        lineX[i + yCount].position.z = 0.01;
+        lineX[i + yCount].computeLineDistances();
+        scene.add(lineX[i + yCount]);
+    }
+}
+
+function render() {
+    renderer.setSize(sizes.width, sizes.height);
+    renderer.render(scene, camera);
+}
+
+function cameraCtrl() {
+    if (!star || !star.pos) { return; }
+
+    const [x, y] = star.pos; // Destructure for better readability
+
+    if (isMobile) camera.position.set(x, y - 2, 3);
+    else camera.position.set(x, y - 3, 5);
+    camera.rotation.x = Math.PI / 7;
+}
+
+function makeInitialFood() {
+    for (let i = 0; i < MAX_INIT_FOOD; i++) {
+        const item = new Cube(FOOD, INITIAL);
+        item.create();
+        food.push(item);
+    }
+}
+
+function makeInitHideTail(cube) {
+    for (let i = 0; i < 10; i++) {
+        const tailSegment = new Cube(TAIL, INITIAL);
+        tailSegment.create();
+        cube.newtail.push(tailSegment);
+        scene.remove(tailSegment.cube);
+    }
+}
+
+function makeInitHideBots() {
+    for (let i = 0; i < MAX_BOT; i++) {
+        const bot = new Cube(BOT, INITIAL);
+        bot.create();
+        replayBots.push(bot);
+        scene.remove(bot.cube);
+    }
+}
+
+function makeFood(size = 2) {
+    if (cycleFood < TIME_SPACE_FOOD) {
+        cycleFood++;
+        return;
+    }
+
+    cycleFood = 0;
+
+    // if (star.size > 256) MAX_FOOD = 3;
+    if (bProduce && food.length < MAX_FOOD) {
+        const newFood = new Cube(FOOD, INITIAL);
+        newFood.create();
+        food.push(newFood);
+
+        // const sizeUpdates = (Math.random() * 5) | 0; // Random number 0-4
+        const sizeUpdates = (Math.random() * 4 * Math.log2(size)) + 1;
+        for (let i = 0; i < sizeUpdates; i++) {
+            newFood.updateSize();
+        }
+    }
+}
+
+function makeBot() {
+    if (cycleBot < TIME_SPACE_BOT) {
+        cycleBot++;
+    } else {
+        cycleBot = 0;
+        if (bots.length < MAX_BOT) {
+            let botIndex = bots.length; // Track the index of the new bot
+            let newBot = new Cube(BOT, INITIAL);
+            newBot.create();
+
+            newBot.botName.text = `Bot${botIndex}`;
+            // newBot.cube.add(botText); // Attach text to the newly created bot
+
+            bots.push(newBot); // Store the new bot in the array
+            // Randomly resize the new bot (0 to 4 times)
+            let buf = Math.floor(Math.random() * 5);
+            for (let i = 0; i < buf; i++) {
+                newBot.updateSize();
+            }
+        }
+    }
+}
+
+function lightControl() {
+    const lightPositions = [
+        [0, 300, 200],
+        [0, -40, 140],
+        [400, -300, 150],
+        [-400, -300, 50]
+    ];
+
+    lightPositions.forEach(pos => {
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(...pos);
+        scene.add(light);
+    });
+}
+
+function extract(cube) {
+    let buf = {
+        x: 0,
+        y: 0,
+        direction: 0,
+        size: 2,
+        tail: [],
+        text: ''
+    }
+    buf.x = cube.pos[0];
+    buf.y = cube.pos[1];
+    buf.direction = cube.cube.rotation.z;
+    buf.size = cube.size;
+    buf.text = cube.text;
+    if (cube.tail.length !== 0) {
+        cube.tail.forEach(item => buf.tail.push(extract(item)));
+    }
+    return buf;
+}
+
+function restore(cube, info) {
+    scene.add(cube.cube);
+    cube.pos[0] = info.x;
+    cube.pos[1] = info.y;
+    cube.cube.rotation.z = info.direction;
+    cube.setPos();
+    while (true) {
+        if (cube.size === info.size) break;
+        else if (cube.size < info.size) cube.updateSize();
+        else cube.smallerSize();
+    }
+    if (cube.newtail.length !== 0) {
+        cube.newtail.forEach(item => {
+            scene.remove(item.cube)
+        })
+
+        info.tail.forEach((item, i) => {
+            cube.newtail[i].pos[0] = item.x;
+            cube.newtail[i].pos[1] = item.y;
+            cube.newtail[i].cube.rotation.z = item.direction;
+            cube.newtail[i].setPos();
+            while (true) {
+                if (cube.newtail[i].size === item.size) break;
+                else if (cube.newtail[i].size < item.size) cube.newtail[i].updateSize();
+                else cube.newtail[i].smallerSize();
+            }
+            scene.add(cube.newtail[i].cube);
+        });
+    }
+    return cube;
+}
+
+function setHistory() {
+    if (!star || !bots || !food) return; // Ensure data exists
+
+    let tStar = extract(star);
+    let tBot = bots.map(bot => extract(bot)); // Use .map() instead of .forEach()
+    let tFood = food.map(foodItem => extract(foodItem));
+
+    trace.push({ star: tStar, bot: tBot, food: tFood });
+}
+
+function initPro() {
+    lightControl();
+
+    // Create name text
+    // nameText = new Text();
+    // nameText.fontSize = 0.1;
+    // nameText.fontWeight = 'bold';
+    // nameText.color = '#ffffff';
+    // nameText.text = `you`;
+    // nameText.geometry.center();
+
+    // Create a triangle marker (🔺)
+    threeAngle = new Text();
+    threeAngle.fontSize = 0.4;
+    threeAngle.fontWeight = 'bold';
+    threeAngle.color = '#ffffff';
+    threeAngle.fillOpacity = 0.7;
+    threeAngle.position.set(0.6, 0.25, 0);
+    threeAngle.rotation.z = -Math.PI / 2;
+    threeAngle.text = `🔺`;
+
+    // Create player cube
+    star = new Cube(PERSON, INITIAL);
+    star.create();
+    star.makeStarName();
+    // nameText.position.set(star.pos[0] - 0.2, 0, 0.6);
+
+    // Attach texts to star
+    // star.cube.add(nameText);
+    star.cube.add(threeAngle);
+    makeInitialFood();
+    // Hide tails and bots initially
+    makeInitHideTail(star);
+    makeInitHideBots();
+    replayBots.forEach(bot => makeInitHideTail(bot));
+
+    // Add additional elements
+    addPlane();
+    addWall();
+    drawX();
+}
+
+function updateTable(person, bots) {
+    if (cycleTable < TIME_SPACE_TABLE) {
+        cycleTable++;
+        return;
+    }
+
+    cycleTable = 0; // Reset cycleTable after update
+
+    const updateCube = bots.map((bot, index) => ({
+        cube: bot,
+        id: `Bot ${index}`
+    })).concat({ cube: person, id: "You" });
+
+    // Sort cubes by size in descending order and take the top 5
+    const sortData = updateCube.sort((a, b) => b.cube.size - a.cube.size).slice(0, 5);
+
+    const tbody = document.querySelector('#leaderboard tbody');
+    tbody.innerHTML = ''; // Clear the table before updating
+
+    sortData.forEach((data, i) => {
+                const row = document.createElement('tr');
+                row.classList.toggle("highlight", data.id === "You"); // Highlight player row
+
+                row.innerHTML = `
             <td class="rank">${i + 1}</td>
             <td class="name ${data.id === "You" ? 'player-name' : ''}">${data.id === "You" ? (typeof cubeName !== "undefined" ? cubeName : "You") : data.id}</td>
             <td class="score">${data.cube.size < 1000 ? data.cube.size : `${Math.floor(data.cube.size / 1000)}K`}</td>

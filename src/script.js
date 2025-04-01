@@ -651,107 +651,64 @@ class Cube {
             deltaY = 0;
         let bCrash = false;
         let bOverlap = false;
-        let bufBots = bots.filter((bot, index) => index !== botState);
-
-        if (this.type === PERSON) {
-            star.tail.forEach((item, i) => {
-                bots.forEach((bot, i) => {
-                    const minDist = item.sizeDef;
-                    bCrash = false;
-                    bOverlap = false;
-                    deltaY = Math.abs(bot.pos[1] - item.pos[1]);
-                    deltaX = Math.abs(bot.pos[0] - item.pos[0]);
-                    if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
-                        for (let j = 0; j < 4; j++) {
-                            if (isPointInRectangle(bot.corner[j * 2], bot.corner[j * 2 + 1], item.corner)) bCrash = true;
-                            if (isPointInRectangle(item.corner[j * 2], item.corner[j * 2 + 1], bot.corner)) bCrash = true;
-                        }
-                        if (isLineRectangleOverlapping([
-                                [item.corner[6], item.corner[7]],
-                                [item.corner[0], item.corner[1]]
-                            ], bot.corner)) {
-                            bOverlap = true;
-                        }
+        let neighbors = bots.filter((item, index) => index !== botState);
+        neighbors.forEach((item, key) => {
+            item.tail.forEach((eachTail, index) => {
+                bots.forEach((monster, i) => {
+                    if (bufBots.length !== 0) {
+                        bots = deleteIndexesFromArray(bots, bufBots);
+                        bufBots = [];
                     }
-                    if (bCrash) {
-                        if (bot.size < item.size) {
-                            playAudio(this.type);
-                            scene.remove(bots[i].cube);
-                            scene.remove(bots[i].text);
-                            scene.remove(bots[i].botName);
-                            let buf1 = bots[i].cube;
-                            buf1.tail = [];
-                            buf1.type = FOOD;
-                            let buf2 = bots[i].cube.tail;
-                            buf2.forEach(bot => {
-                                bot.type = FOOD;
-                                buf1.push(bot)
-                            });
-                            buf1.forEach((item, i) => {
-                                item.eat = true;
-                                food.push(item);
-                            })
-                        }
-                    }
-                })
-            })
-        } else {
-            bots.forEach((item1, index) => {
-                let bufBots = bots.filter((bot, index) => index !== botState);
-                item1.tail.forEach((item, i) => {
-                    bufBots.forEach((bot, i) => {
-                        const minDist = item.sizeDef;
+                    if (i !== botState) {
+                        const minDist = monster.sizeDef;
                         bCrash = false;
                         bOverlap = false;
-                        deltaY = Math.abs(bot.pos[1] - item.pos[1]);
-                        deltaX = Math.abs(bot.pos[0] - item.pos[0]);
+                        deltaY = monster.pos[1] - eachTail.pos[1];
+                        if (deltaY < 0) deltaY = -deltaY;
+                        deltaX = monster.pos[0] - eachTail.pos[0];
+                        if (deltaX < 0) deltaX = -deltaX;
                         if (deltaX < 1.5 * minDist && deltaY < 1.5 * minDist) {
+
                             for (let j = 0; j < 4; j++) {
-                                if (isPointInRectangle(bot.corner[j * 2], bot.corner[j * 2 + 1], item.corner)) bCrash = true;
-                                if (isPointInRectangle(item.corner[j * 2], item.corner[j * 2 + 1], bot.corner)) bCrash = true;
+                                if (isPointInRectangle(monster.corner[j * 2], monster.corner[j * 2 + 1], eachTail.corner)) bCrash = true;
+                                if (isPointInRectangle(eachTail.corner[j * 2], eachTail.corner[j * 2 + 1], monster.corner)) bCrash = true;
                             }
                             if (isLineRectangleOverlapping([
-                                    [item.corner[6], item.corner[7]],
-                                    [item.corner[0], item.corner[1]]
-                                ], bot.corner)) {
+                                    [eachTail.corner[6], eachTail.corner[7]],
+                                    [eachTail.corner[0], eachTail.corner[1]]
+                                ], monster.corner)) {
                                 bOverlap = true;
                             }
                         }
                         if (bCrash) {
-                            if (bot.size < item.size) {
-                                playAudio(this.type);
+                            if (monster.size < eachTail.size) {
+                                playAudio(eachTail.type);
+                                scene.remove(bots[i].botName);
                                 scene.remove(bots[i].cube);
                                 scene.remove(bots[i].text);
-                                scene.remove(bots[i].botName);
+                                bots[i] = null;
                                 tailBuf = new Cube(TAIL, INITIAL);
+                                render();
                                 tailBuf.create();
                                 while (true) {
-                                    if (bot.size === tailBuf.size) break;
+                                    if (monster.size === tailBuf.size) break;
                                     tailBuf.updateSize();
                                 }
-                                item1.connectTail(tailBuf);
+                                this.connectTail(tailBuf);
                                 this.setPos();
-                                bot.eat = true;
+                                monster.eat = true;
                                 // bots.delete(i);
                                 let index = bufBots.findIndex(bufBot => bufBot === i);
                                 if (index === -1) bufBots.push(i);
-                            } else {
-                                if (bOverlap) {
-                                    let bufCenterAngle = Math.atan2((bot.pos[1] - item.pos[1]), (bot.pos[0] - item.pos[0])) - item.cube.rotation.z;
-                                    if (bufCenterAngle > 0) bot.cube.rotation.z -= Math.PI / 2000;
-                                    else if (bufCenterAngle < 0) bot.cube.rotation.z += Math.PI / 2000;
-                                    bot.pos[0] = bot.pos[0] + Math.cos(this.cube.rotation.z) * moveSpeedStar.x;
-                                    bot.pos[1] = bot.pos[1] + Math.sin(this.cube.rotation.z) * moveSpeedStar.x;
-                                    bot.setPos();
-                                    bot.setAngle(monster.cube.rotation.z);
-                                    bot.setCornerPosition();
-                                }
+                                return;
                             }
                         }
-                    })
-                })
+                    }
+                });
             })
-        }
+        })
+
+
     }
 
     setStarBuffer() {
